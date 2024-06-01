@@ -10,7 +10,7 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 import tensorflow as tf
 
 # Set up directories
-data_dir = '../dataset'
+data_dir = 'dataset'
 categories = os.listdir(data_dir)
 
 # Parameters for image processing
@@ -20,7 +20,7 @@ img_height, img_width = 256, 256
 images = []
 labels = []
 
-# Load and preprocess the images
+# Load the images
 for category in categories:
     category_path = os.path.join(data_dir, category)
     for img_name in os.listdir(category_path):
@@ -42,8 +42,7 @@ labels = np.array(labels)
 label_encoder = LabelEncoder()
 labels_encoded = label_encoder.fit_transform(labels)
 
-# Perform EDA
-# 1. Display the distribution of images per category
+# Display the distribution of images per category
 plt.figure(figsize=(10, 6))
 sns.countplot(x=labels)
 plt.title('Distribution of Images per Category')
@@ -52,7 +51,7 @@ plt.ylabel('Count')
 plt.xticks(rotation=45)
 plt.show()
 
-# 2. Display a few sample images from each category
+# Display a few sample images from each category
 fig, axes = plt.subplots(len(categories), 5, figsize=(15, 15))
 for i, category in enumerate(categories):
     category_indices = np.where(labels == category)[0]
@@ -64,7 +63,7 @@ for i, category in enumerate(categories):
             axes[i, j].set_title(category)
 plt.show()
 
-# Preprocessing: Normalize the images
+# Normalize the images
 images = images / 255.0
 
 # Split the data into training and testing sets
