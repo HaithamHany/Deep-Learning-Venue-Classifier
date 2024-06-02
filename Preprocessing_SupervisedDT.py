@@ -145,6 +145,9 @@ def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test, co
     best_params = randomized_search.best_params_
     best_score = randomized_search.best_score_
 
+    print(f"Best Hyperparameters: {best_params}")
+    print(f"Best Cross-Validation Accuracy: {best_score}")
+
     # Evaluate the best model on the test set
     y_pred = best_clf.predict(X_test_flat)
 
