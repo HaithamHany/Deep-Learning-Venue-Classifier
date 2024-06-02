@@ -17,6 +17,8 @@ from sklearn.metrics import (
 import tensorflow as tf
 from multiprocessing import Pool
 from Spinner import Spinner
+from Config import config
+from sklearn.model_selection import RandomizedSearchCV
 
 # Set up directories
 data_dir = 'dataset'
@@ -111,31 +113,60 @@ def flatten_images(images):
     """
     return images.reshape((images.shape[0], -1))
 
-def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test):
-    """
-    Train a Decision Tree Classifier and evaluate it on the test set.
-    """
-    clf = DecisionTreeClassifier(random_state=42)
-    clf.fit(X_train_flat, y_train)
-    y_pred = clf.predict(X_test_flat)
 
-    # Evaluation metrics
+def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test, config):
+    """
+    Train and evaluate a Decision Tree Classifier with specified hyperparameters.
+    Perform a randomized search over the provided hyperparameters.
+    """
+    param_distributions = {
+        'max_depth': config.get("max_depth"),
+        'min_samples_split': config.get("min_samples_split"),
+        'min_samples_leaf': config.get("min_samples_leaf"),
+    }
+
+    clf = DecisionTreeClassifier(random_state=config.get("random_state"))
+
+    # Perform randomized search with parallelization
+    randomized_search = RandomizedSearchCV(
+        estimator=clf,
+        param_distributions=param_distributions,
+        n_iter=config.get("n_iter", 5),  # Default to 5 if not specified
+        scoring='accuracy',
+        n_jobs=config.get("n_jobs", -1),  # Default to using all cores if not specified
+        cv=config.get("cv", 3),  # Default to 3-fold cross-validation if not specified
+        verbose=1,  # Default to verbosity level 1 if not specified
+        random_state=config.get("random_state")
+    )
+
+    randomized_search.fit(X_train_flat, y_train)
+
+    best_clf = randomized_search.best_estimator_
+    best_params = randomized_search.best_params_
+    best_score = randomized_search.best_score_
+
+    # Evaluate the best model on the test set
+    y_pred = best_clf.predict(X_test_flat)
+
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, average='weighted')
     recall = recall_score(y_test, y_pred, average='weighted')
     f1 = f1_score(y_test, y_pred, average='weighted')
 
-    print("Accuracy:", accuracy)
-    print("Precision:", precision)
-    print("Recall:", recall)
-    print("F1-score:", f1)
+    print("Best Hyperparameters:", best_params)
+    print("Best Cross-Validation Accuracy:", best_score)
+    print("Test Accuracy:", accuracy)
+    print("Test Precision:", precision)
+    print("Test Recall:", recall)
+    print("Test F1-score:", f1)
     print("Classification Report:")
     print(classification_report(y_test, y_pred, target_names=label_encoder.classes_))
 
     print("Confusion Matrix:")
     conf_matrix = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(10, 7))
-    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_)
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=label_encoder.classes_,
+                yticklabels=label_encoder.classes_)
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.title('Confusion Matrix')
@@ -213,6 +244,6 @@ if __name__ == "__main__":
     spinner.start()
 
     # Train and evaluate classifier
-    train_and_evaluate_classifier(X_train_augmented_flat, y_train_augmented, X_test_flat, y_test)
+    train_and_evaluate_classifier(X_train_augmented_flat, y_train_augmented, X_test_flat, y_test, config)
 
     spinner.stop()
