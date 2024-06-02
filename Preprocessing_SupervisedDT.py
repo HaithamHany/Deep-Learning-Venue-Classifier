@@ -16,6 +16,7 @@ from sklearn.metrics import (
 )
 import tensorflow as tf
 from multiprocessing import Pool
+from Spinner import Spinner
 
 # Set up directories
 data_dir = 'dataset'
@@ -142,22 +143,47 @@ def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test):
 
 # Main execution
 if __name__ == "__main__":
+
+    spinner = Spinner()
+    spinner.set_msg("Loading Images")
+    spinner.start()
     # Load images in parallel
     images, labels = load_images_parallel()
+
+    spinner.stop()
+    spinner.set_msg("Encoding Labels")
+    spinner.start()
+
 
     # Encode the labels
     label_encoder = LabelEncoder()
     labels_encoded = label_encoder.fit_transform(labels)
 
+    spinner.stop()
+    spinner.set_msg("Display distribution and sample images")
+    spinner.start()
+
     # Display distribution and sample images
     display_distribution(labels)
     display_sample_images(images, labels)
 
+    spinner.stop()
+    spinner.set_msg("Normalizing images")
+    spinner.start()
+
     # Normalize images
     images = images / 255.0
 
+    spinner.stop()
+    spinner.set_msg("Splitting data into training and testing sets")
+    spinner.start()
+
     # Split data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(images, labels_encoded, test_size=0.2, random_state=42)
+
+    spinner.stop()
+    spinner.set_msg("Augmenting the training data")
+    spinner.start()
 
     # Augment the training data
     X_train_tensor = tf.convert_to_tensor(X_train, dtype=tf.float32)
@@ -174,9 +200,19 @@ if __name__ == "__main__":
     X_train_augmented = np.concatenate(X_train_augmented)
     y_train_augmented = np.concatenate(y_train_augmented)
 
+    spinner.stop()
+    spinner.set_msg("Flattening images")
+    spinner.start()
+
     # Flatten images
     X_train_augmented_flat = flatten_images(X_train_augmented)
     X_test_flat = flatten_images(X_test)
 
+    spinner.stop()
+    spinner.set_msg("Training and evaluating classifier")
+    spinner.start()
+
     # Train and evaluate classifier
     train_and_evaluate_classifier(X_train_augmented_flat, y_train_augmented, X_test_flat, y_test)
+
+    spinner.stop()
