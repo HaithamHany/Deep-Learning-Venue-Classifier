@@ -1,8 +1,11 @@
+import os
 import numpy as np
+import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
-import tensorflow as tf
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.semi_supervised import LabelSpreading
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import (
     classification_report,
@@ -12,19 +15,18 @@ from sklearn.metrics import (
     recall_score,
     f1_score
 )
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.semi_supervised import LabelSpreading
-import joblib
+import tensorflow as tf
 from Spinner import Spinner
-from Config import config
 from Preprocessing import Preprocessing
 
-class ImageClassifier:
+
+class ImageClassifierDT:
     def __init__(self, mode='supervised', data_dir='dataset'):
         self.mode = mode
+        self.data_dir = data_dir
         self.spinner = Spinner()
         self.preprocessing = Preprocessing(data_dir)
-        self.label_encoder = None
+        self.label_encoder = LabelEncoder()
 
     def load_and_preprocess_data(self):
         self.spinner.set_msg("Loading Images")
@@ -34,7 +36,7 @@ class ImageClassifier:
 
         self.spinner.set_msg("Encoding Labels")
         self.spinner.start()
-        labels_encoded, self.label_encoder = self.preprocessing.encode_labels(labels)
+        labels_encoded = self.label_encoder.fit_transform(labels)
         self.spinner.stop()
 
         self.spinner.set_msg("Display distribution and sample images")
@@ -45,7 +47,7 @@ class ImageClassifier:
 
         self.spinner.set_msg("Normalizing images")
         self.spinner.start()
-        images = self.preprocessing.normalize_images(images)
+        images = images / 255.0
         self.spinner.stop()
 
         self.spinner.set_msg("Splitting data into training and testing sets")
@@ -53,42 +55,7 @@ class ImageClassifier:
         X_train, X_test, y_train, y_test = train_test_split(images, labels_encoded, test_size=0.2, random_state=42)
         self.spinner.stop()
 
-        return X_train, X_test, y_train, y_test
-
-    def train_and_evaluate_classifier(self, X_train, y_train, X_test, y_test):
         if self.mode == 'semi_supervised':
-            n_labeled = int(0.8 * len(y_train))
-            indices = np.arange(len(y_train))
-            np.random.shuffle(indices)
-            labeled_indices = indices[:n_labeled]
-            unlabeled_indices = indices[n_labeled:]
-
-            X_train_labeled = X_train[labeled_indices]
-            y_train_labeled = y_train[labeled_indices]
-
-            X_train_unlabeled = X_train[unlabeled_indices]
-            y_train_unlabeled = -1 * np.ones(len(unlabeled_indices), dtype=int)
-
-            # Flatten images
-            self.spinner.set_msg("Flattening images")
-            self.spinner.start()
-            X_train_labeled_flat = self.preprocessing.flatten_images(X_train_labeled)
-            X_train_unlabeled_flat = self.preprocessing.flatten_images(X_train_unlabeled)
-            self.spinner.stop()
-
-            # Combine labeled and unlabeled data
-            X_train_combined = np.concatenate((X_train_labeled_flat, X_train_unlabeled_flat), axis=0)
-            y_train_combined = np.concatenate((y_train_labeled, y_train_unlabeled), axis=0)
-
-            label_spreading = LabelSpreading(kernel='knn', alpha=0.8)
-            label_spreading.fit(X_train_combined, y_train_combined)
-
-            y_train_unlabeled_pred = label_spreading.transduction_[len(labeled_indices):]
-
-            X_train_final = np.concatenate((X_train_labeled_flat, X_train_unlabeled_flat), axis=0)
-            y_train_final = np.concatenate((y_train_labeled, y_train_unlabeled_pred), axis=0)
-
-        else:
             self.spinner.set_msg("Augmenting the training data")
             self.spinner.start()
             X_train_tensor = tf.convert_to_tensor(X_train, dtype=tf.float32)
@@ -106,58 +73,70 @@ class ImageClassifier:
             y_train_augmented = np.concatenate(y_train_augmented)
             self.spinner.stop()
 
-            # Flatten images
             self.spinner.set_msg("Flattening images")
             self.spinner.start()
-            X_train_final = self.preprocessing.flatten_images(X_train_augmented)
-            X_test = self.preprocessing.flatten_images(X_test)
+            X_train_augmented_flat = self.preprocessing.flatten_images(X_train_augmented)
+            X_test_flat = self.preprocessing.flatten_images(X_test)
             self.spinner.stop()
 
-            y_train_final = y_train_augmented
+            return X_train_augmented_flat, X_test_flat, y_train_augmented, y_test
+        else:
+            return X_train, X_test, y_train, y_test
 
-        X_test = self.preprocessing.flatten_images(X_test)
+    def train_and_evaluate_classifier(self, X_train, y_train, X_test, y_test):
+        if self.mode == 'semi_supervised':
+            # Split the augmented training data into labeled and unlabeled sets
+            n_labeled = int(0.8 * len(y_train))
+            indices = np.arange(len(y_train))
+            np.random.shuffle(indices)
+            labeled_indices = indices[:n_labeled]
+            unlabeled_indices = indices[n_labeled:]
 
-        param_distributions = {
-            'max_depth': config.get("max_depth"),
-            'min_samples_split': config.get("min_samples_split"),
-            'min_samples_leaf': config.get("min_samples_leaf"),
-        }
+            X_train_labeled = X_train[labeled_indices]
+            y_train_labeled = y_train[labeled_indices]
 
-        self.spinner.set_msg("Training and evaluating classifier")
-        self.spinner.start()
-        clf = DecisionTreeClassifier(random_state=config.get("random_state"))
+            X_train_unlabeled = X_train[unlabeled_indices]
+            y_train_unlabeled = -1 * np.ones(len(unlabeled_indices), dtype=int)  # Use -1 for unlabeled data
 
-        randomized_search = RandomizedSearchCV(
-            estimator=clf,
-            param_distributions=param_distributions,
-            n_iter=config.get("n_iter", 5),
-            scoring='accuracy',
-            n_jobs=config.get("n_jobs", -1),
-            cv=config.get("cv", 3),
-            verbose=1,
-            random_state=config.get("random_state")
-        )
+            # Combine labeled and unlabeled data
+            X_train_combined = np.concatenate((X_train_labeled, X_train_unlabeled), axis=0)
+            y_train_combined = np.concatenate((y_train_labeled, y_train_unlabeled), axis=0)
 
-        randomized_search.fit(X_train_final, y_train_final)
+            # Apply LabelSpreading for semi-supervised learning
+            label_spreading = LabelSpreading(kernel='knn', alpha=0.8)
+            label_spreading.fit(X_train_combined, y_train_combined)
 
-        best_clf = randomized_search.best_estimator_
-        best_params = randomized_search.best_params_
-        best_score = randomized_search.best_score_
+            # Predict the labels for the unlabeled data
+            y_train_unlabeled_pred = label_spreading.transduction_[len(labeled_indices):]
 
-        y_pred = best_clf.predict(X_test)
-        self.spinner.stop()
+            # Combine the newly labeled data with the original labeled data
+            X_train_final = np.concatenate((X_train_labeled, X_train_unlabeled), axis=0)
+            y_train_final = np.concatenate((y_train_labeled, y_train_unlabeled_pred), axis=0)
+        else:
+            # For supervised learning, use the data as is
+            X_train_final, y_train_final = X_train, y_train
 
+        # Train a Decision Tree Classifier
+        clf = DecisionTreeClassifier(max_depth=10, min_samples_split=10, min_samples_leaf=5, criterion='entropy', splitter='best', random_state=42)
+        clf.fit(X_train_final, y_train_final)
+        model_filename = 'venue_classifier_decision_tree.joblib'
+        joblib.dump(clf, model_filename)
+        print(f"Model saved to {model_filename}")
+
+        # Make predictions and evaluate
+        y_pred = clf.predict(X_test)
+
+        # Evaluation metrics
         accuracy = accuracy_score(y_test, y_pred)
         precision = precision_score(y_test, y_pred, average='weighted')
         recall = recall_score(y_test, y_pred, average='weighted')
         f1 = f1_score(y_test, y_pred, average='weighted')
 
-        print("Best Hyperparameters:", best_params)
-        print("Best Cross-Validation Accuracy:", best_score)
-        print("Test Accuracy:", accuracy)
-        print("Test Precision:", precision)
-        print("Test Recall:", recall)
-        print("Test F1-score:", f1)
+        print("Accuracy:", accuracy)
+        print("Precision:", precision)
+        print("Recall:", recall)
+        print("F1-score:", f1)
+
         print("Classification Report:")
         print(classification_report(y_test, y_pred, target_names=self.label_encoder.classes_))
 
@@ -171,21 +150,11 @@ class ImageClassifier:
         plt.title('Confusion Matrix')
         plt.show()
 
-        best_model = randomized_search.best_estimator_
-        self.save_model(best_model, 'best_model.pkl')
-
-    def save_model(self, model, filename):
-        joblib.dump(model, filename)
-
-    def load_model(self, filename):
-        return joblib.load(filename)
-
-    def run(self):
-        X_train, X_test, y_train, y_test = self.load_and_preprocess_data()
-        self.train_and_evaluate_classifier(X_train, y_train, X_test, y_test)
-
 
 # Main execution
 if __name__ == "__main__":
-    classifier = ImageClassifier(mode='semi_supervised')  # or 'supervised'
-    classifier.run()
+    mode = 'semi_supervised'  # or 'supervised'
+    classifier = ImageClassifierDT(mode=mode)
+
+    X_train, X_test, y_train, y_test = classifier.load_and_preprocess_data()
+    classifier.train_and_evaluate_classifier(X_train, y_train, X_test, y_test)
