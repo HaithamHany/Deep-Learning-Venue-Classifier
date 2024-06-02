@@ -5,6 +5,7 @@ import seaborn as sns
 from PIL import Image
 import tensorflow as tf
 from multiprocessing import Pool
+from sklearn.preprocessing import LabelEncoder
 
 class Preprocessing:
     def __init__(self, data_dir='dataset', img_height=128, img_width=128):
@@ -82,7 +83,6 @@ class Preprocessing:
         return images / 255.0
 
     def encode_labels(self, labels):
-        from sklearn.preprocessing import LabelEncoder
         label_encoder = LabelEncoder()
         labels_encoded = label_encoder.fit_transform(labels)
         return labels_encoded, label_encoder
