@@ -125,7 +125,7 @@ def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test, co
         'min_samples_leaf': config.get("min_samples_leaf"),
     }
 
-    clf = DecisionTreeClassifier(random_state=config.get("random_state"))
+    clf = DecisionTreeClassifier(criterion='entropy', random_state=config.get("random_state"))
 
     # Perform randomized search with parallelization
     randomized_search = RandomizedSearchCV(
@@ -250,3 +250,4 @@ if __name__ == "__main__":
     train_and_evaluate_classifier(X_train_augmented_flat, y_train_augmented, X_test_flat, y_test, config)
 
     spinner.stop()
+    spinner.set_msg(" ")
