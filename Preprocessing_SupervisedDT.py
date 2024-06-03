@@ -20,12 +20,17 @@ from Spinner import Spinner
 from Config import config
 from sklearn.model_selection import RandomizedSearchCV
 
+from sklearn.tree import DecisionTreeClassifier
+import joblib
+
+
 # Set up directories
 data_dir = 'dataset'
 categories = os.listdir(data_dir)
 
 # Parameters for image processing
 img_height, img_width = 128, 128  # Reduced size for faster processing
+
 
 def process_image(params):
     """
@@ -42,13 +47,15 @@ def process_image(params):
         print(f"Error loading image {img_path}: {e}")
         return None, None
 
+
 def load_images_parallel():
     """
     Load images in parallel using multiprocessing Pool.
     """
     images = []
     labels = []
-    params = [(category, img_name) for category in categories for img_name in os.listdir(os.path.join(data_dir, category))]
+    params = [(category, img_name) for category in categories for img_name in
+              os.listdir(os.path.join(data_dir, category))]
     with Pool() as pool:
         results = pool.map(process_image, params)
     for img_array, category in results:
@@ -56,6 +63,7 @@ def load_images_parallel():
             images.append(img_array)
             labels.append(category)
     return np.array(images), np.array(labels)
+
 
 def display_distribution(labels):
     """
@@ -68,6 +76,7 @@ def display_distribution(labels):
     plt.ylabel('Count')
     plt.xticks(rotation=45)
     plt.show()
+
 
 def display_sample_images(images, labels):
     """
@@ -84,6 +93,7 @@ def display_sample_images(images, labels):
                 axes[i, j].set_title(category)
     plt.show()
 
+
 def augment_image(image):
     """
     Apply random augmentations to an image.
@@ -94,6 +104,7 @@ def augment_image(image):
     image = tf.image.random_brightness(image, max_delta=0.3)
     image = tf.image.random_contrast(image, lower=0.8, upper=1.2)
     return image
+
 
 def augment_dataset(X_train, y_train):
     """
@@ -107,6 +118,7 @@ def augment_dataset(X_train, y_train):
     dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
     return dataset
 
+
 def flatten_images(images):
     """
     Flatten images for input into the decision tree classifier.
@@ -114,10 +126,10 @@ def flatten_images(images):
     return images.reshape((images.shape[0], -1))
 
 
-def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test, config):
+def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test, config, model_path="best_model.joblib"):
     """
-    Train and evaluate a Decision Tree Classifier with specified hyperparameters.
-    Perform a randomized search over the provided hyperparameters.
+    Train a Decision Tree Classifier with specified hyperparameters and evaluate it on the test set.
+    Perform a randomized search over the provided hyperparameters and save the best model.
     """
     param_distributions = {
         'max_depth': config.get("max_depth"),
@@ -131,11 +143,11 @@ def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test, co
     randomized_search = RandomizedSearchCV(
         estimator=clf,
         param_distributions=param_distributions,
-        n_iter=config.get("n_iter", 5),  # Default to 5 if not specified
+        n_iter=config.get("n_iter", 5),  # Number of parameter settings that are sampled
         scoring='accuracy',
-        n_jobs=config.get("n_jobs", -1),  # Default to using all cores if not specified
-        cv=config.get("cv", 3),  # Default to 3-fold cross-validation if not specified
-        verbose=1,  # Default to verbosity level 1 if not specified
+        n_jobs=config.get("n_jobs", -1),  # Use all available cores
+        cv=config.get("cv", 3),  # 5-fold cross-validation
+        verbose=config.get("verbose", 1),  # Verbosity level
         random_state=config.get("random_state")
     )
 
@@ -145,8 +157,9 @@ def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test, co
     best_params = randomized_search.best_params_
     best_score = randomized_search.best_score_
 
-    print(f"Best Hyperparameters: {best_params}")
-    print(f"Best Cross-Validation Accuracy: {best_score}")
+    # Save the best model
+    joblib.dump(best_clf, model_path)
+    print(f"Best model saved to {model_path}")
 
     # Evaluate the best model on the test set
     y_pred = best_clf.predict(X_test_flat)
@@ -175,6 +188,7 @@ def train_and_evaluate_classifier(X_train_flat, y_train, X_test_flat, y_test, co
     plt.title('Confusion Matrix')
     plt.show()
 
+
 # Main execution
 if __name__ == "__main__":
 
@@ -187,7 +201,6 @@ if __name__ == "__main__":
     spinner.stop()
     spinner.set_msg("Encoding Labels")
     spinner.start()
-
 
     # Encode the labels
     label_encoder = LabelEncoder()
