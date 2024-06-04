@@ -73,14 +73,6 @@ def execute_preprocessing():
     return preprocessing, label_encoder, X_train, X_test, y_train, y_test
 
 
-def train_and_evaluate(classifier, X_train, y_train, X_test, y_test):
-    spinner = Spinner()
-    spinner.set_msg("Training and evaluating classifier")
-    spinner.start()
-    classifier.train_and_evaluate_classifier(X_train, y_train, X_test, y_test, config)
-    spinner.stop()
-
-
 if __name__ == "__main__":
     preprocessing, label_encoder, X_train, X_test, y_train, y_test = execute_preprocessing()
 
@@ -88,7 +80,7 @@ if __name__ == "__main__":
     print()
     mode = get_user_choice()
 
-    # Classifier selection and training
+    # Classifier selection
     if mode == '1':
         print("Selected mode: Supervised learning")
         classifier = SupervisedImageClassifier(preprocessing, label_encoder)
@@ -102,9 +94,11 @@ if __name__ == "__main__":
 
     if model_choice == '1':
         print("Selected action: Train a new model")
+        classifier.train_classifier(X_train, y_train, config)
     else:
         print("Selected action: Load a previously trained model")
         model_filename = input("Enter the filename of the trained model to load: ")
         classifier.load_model(model_filename)
 
-    train_and_evaluate(classifier, X_train, y_train, X_test, y_test)
+    # Evaluate the classifier
+    classifier.evaluate_classifier(X_test, y_test)

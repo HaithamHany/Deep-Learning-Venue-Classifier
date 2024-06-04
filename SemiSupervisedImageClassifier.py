@@ -22,25 +22,24 @@ class SemiSupervisedImageClassifier:
         """
         self.preprocessing = preprocessing
         self.label_encoder = label_encoder
-        self.classifier = None
+        self.trained_model = None
 
     def load_model(self, model_filename):
         try:
-            self.classifier = joblib.load(model_filename)
+            self.trained_model = joblib.load(model_filename)
             print("Model loaded successfully!")
         except Exception as e:
             print(f"Error loading the model: {e}")
 
-    def train_and_evaluate_classifier(self, X_train, y_train, X_test, y_test, config):
+    def train_classifier(self, X_train, y_train, config):
         """
-        Train and evaluate a semi-supervised classifier using SelfTrainingClassifier with randomized search for hyperparameter optimization.
+        Train a semi-supervised classifier using SelfTrainingClassifier with randomized search for hyperparameter optimization.
         """
         # Split data into labeled and unlabeled
         X_train_semi, y_train_semi = self.preprocessing.split_labeled_unlabeled(X_train, y_train, labeled_ratio=0.8)
 
         # Flatten images
         X_train_flat = self.preprocessing.flatten_images(X_train_semi)
-        X_test_flat = self.preprocessing.flatten_images(X_test)
 
         # Define parameter distributions for RandomizedSearchCV
         param_distributions = {
@@ -73,23 +72,30 @@ class SemiSupervisedImageClassifier:
         self.trained_model = randomized_search.best_estimator_
         joblib.dump(self.trained_model, 'semi_supervised_model.pkl')
 
-        best_clf = randomized_search.best_estimator_
         best_params = randomized_search.best_params_
         best_score = randomized_search.best_score_
 
         print(f"Best Hyperparameters: {best_params}")
         print(f"Best Cross-Validation Accuracy: {best_score}")
 
-        # Evaluate the best model on the test set
-        y_pred = best_clf.predict(X_test_flat)
+    def evaluate_classifier(self, X_test, y_test):
+        """
+        Evaluate the trained classifier on the test set.
+        """
+        if self.trained_model is None:
+            raise ValueError("No trained model found. Please train the model before evaluation.")
+
+        X_test_flat = self.preprocessing.flatten_images(X_test)
+
+        y_pred = self.trained_model.predict(X_test_flat)
 
         accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred, average='weighted')
-        recall = recall_score(y_test, y_pred, average='weighted')
-        f1 = f1_score(y_test, y_pred, average='weighted')
+        precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+        recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+        f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
 
         print("Classification Report:")
-        print(classification_report(y_test, y_pred, target_names=self.label_encoder.classes_))
+        print(classification_report(y_test, y_pred, target_names=self.label_encoder.classes_, zero_division=0))
 
         print("Confusion Matrix:")
         cm = confusion_matrix(y_test, y_pred)
