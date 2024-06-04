@@ -74,6 +74,7 @@ def execute_preprocessing():
 
 
 if __name__ == "__main__":
+    spinner = Spinner()
     preprocessing, label_encoder, X_train, X_test, y_train, y_test = execute_preprocessing()
 
     # User choice for classifier mode
@@ -94,11 +95,17 @@ if __name__ == "__main__":
 
     if model_choice == '1':
         print("Selected action: Train a new model")
+        spinner.set_msg("Training Model")
+        spinner.start()
         classifier.train_classifier(X_train, y_train, config)
+        spinner.stop()
     else:
         print("Selected action: Load a previously trained model")
         model_filename = input("Enter the filename of the trained model to load: ")
+        spinner.set_msg("Loading model")
+        spinner.start()
         classifier.load_model(model_filename)
+        spinner.stop()
 
     # Evaluate the classifier
     classifier.evaluate_classifier(X_test, y_test)
