@@ -15,12 +15,12 @@ img_height, img_width = 128, 128
 
 def get_user_choice():
     while True:
-        print()  # Add an empty print statement for a blank line
+        print()
         print("Select the mode for classification:")
         print("1. Supervised learning")
         print("2. Semi-supervised learning")
         choice = input("Enter 1 or 2: ")
-        if choice == '1' or choice == '2':
+        if choice in ['1', '2']:
             return choice
         else:
             print("Invalid choice. Please enter 1 or 2.")
@@ -28,25 +28,22 @@ def get_user_choice():
 
 def get_model_choice():
     while True:
-        print()  # Add an empty print statement for a blank line
+        print()
         print("Select the action:")
         print("1. Train a new model")
         print("2. Load a previously trained model")
         choice = input("Enter 1 or 2: ")
-        if choice == '1' or choice == '2':
+        if choice in ['1', '2']:
             return choice
         else:
             print("Invalid choice. Please enter 1 or 2.")
 
 
-# Main execution
-if __name__ == "__main__":
-
+def execute_preprocessing():
     spinner = Spinner()
     spinner.set_msg("Loading Images")
     spinner.start()
 
-    # Preprocessing
     preprocessing = Preprocessing(data_dir, img_height, img_width)
     images, labels = preprocessing.load_images_parallel()
     spinner.stop()
@@ -65,13 +62,27 @@ if __name__ == "__main__":
 
     spinner.set_msg("Normalizing images")
     spinner.start()
-    images = images / 255.0
+    images = preprocessing.normalize_images(images)
     spinner.stop()
 
     spinner.set_msg("Splitting data into training and testing sets")
     spinner.start()
     X_train, X_test, y_train, y_test = train_test_split(images, labels_encoded, test_size=0.2, random_state=42)
     spinner.stop()
+
+    return preprocessing, label_encoder, X_train, X_test, y_train, y_test
+
+
+def train_and_evaluate(classifier, X_train, y_train, X_test, y_test):
+    spinner = Spinner()
+    spinner.set_msg("Training and evaluating classifier")
+    spinner.start()
+    classifier.train_and_evaluate_classifier(X_train, y_train, X_test, y_test, config)
+    spinner.stop()
+
+
+if __name__ == "__main__":
+    preprocessing, label_encoder, X_train, X_test, y_train, y_test = execute_preprocessing()
 
     # User choice for classifier mode
     print()
@@ -85,7 +96,6 @@ if __name__ == "__main__":
         print("Selected mode: Semi-supervised learning")
         classifier = SemiSupervisedImageClassifier(preprocessing, label_encoder)
 
-
     # User choice for model training or loading
     print()
     model_choice = get_model_choice()
@@ -97,7 +107,4 @@ if __name__ == "__main__":
         model_filename = input("Enter the filename of the trained model to load: ")
         classifier.load_model(model_filename)
 
-    spinner.set_msg("Training and evaluating classifier")
-    spinner.start()
-    classifier.train_and_evaluate_classifier(X_train, y_train, X_test, y_test, config)
-    spinner.stop()
+    train_and_evaluate(classifier, X_train, y_train, X_test, y_test)

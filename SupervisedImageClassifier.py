@@ -32,12 +32,11 @@ class SupervisedImageClassifier:
         except Exception as e:
             print(f"Error loading the model: {e}")
 
-    def train_and_evaluate_classifier(self, X_train, y_train, X_test, y_test):
+    def train_and_evaluate_classifier(self, X_train, y_train, X_test, y_test, config):
         """
-        Train and evaluate a Decision Tree Classifier with specified hyperparameters.
-        Perform a randomized search over the provided hyperparameters.
-        """
-        # Augment the training data
+                Train and evaluate a Decision Tree Classifier with specified hyperparameters.
+                Perform a randomized search over the provided hyperparameters.
+                """
         X_train_tensor = tf.convert_to_tensor(X_train, dtype=tf.float32)
         y_train_tensor = tf.convert_to_tensor(y_train, dtype=tf.int64)
         augmented_dataset = self.preprocessing.augment_dataset(X_train_tensor, y_train_tensor)
@@ -80,7 +79,7 @@ class SupervisedImageClassifier:
 
         # Save the best trained model
         self.trained_model = randomized_search.best_estimator_
-        joblib.dump(self.trained_model, 'semi_supervised_model.pkl')
+        joblib.dump(self.trained_model, 'supervised_model.pkl')
 
         best_clf = randomized_search.best_estimator_
         best_params = randomized_search.best_params_
