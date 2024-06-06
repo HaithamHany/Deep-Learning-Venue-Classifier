@@ -13,7 +13,8 @@ from sklearn.metrics import (
 )
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import Utils
+from Config import config
 
 class SemiSupervisedImageClassifier:
     def __init__(self, preprocessing, label_encoder):
@@ -25,11 +26,7 @@ class SemiSupervisedImageClassifier:
         self.trained_model = None
 
     def load_model(self, model_filename):
-        try:
-            self.trained_model = joblib.load(model_filename)
-            print("Model loaded successfully!")
-        except Exception as e:
-            print(f"Error loading the model: {e}")
+        self.trained_model = Utils.load_model(model_filename, config)
 
     def train_classifier(self, X_train, y_train, config):
         """
@@ -82,31 +79,4 @@ class SemiSupervisedImageClassifier:
         """
         Evaluate the trained classifier on the test set.
         """
-        if self.trained_model is None:
-            raise ValueError("No trained model found. Please train the model before evaluation.")
-
-        X_test_flat = self.preprocessing.flatten_images(X_test)
-
-        y_pred = self.trained_model.predict(X_test_flat)
-
-        accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
-        recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
-        f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
-
-        print("Classification Report:")
-        print(classification_report(y_test, y_pred, target_names=self.label_encoder.classes_, zero_division=0))
-
-        print("Confusion Matrix:")
-        cm = confusion_matrix(y_test, y_pred)
-        plt.figure(figsize=(10, 7))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=self.label_encoder.classes_, yticklabels=self.label_encoder.classes_)
-        plt.xlabel('Predicted')
-        plt.ylabel('True')
-        plt.title('Confusion Matrix')
-        plt.show()
-
-        print(f"Accuracy: {accuracy}")
-        print(f"Precision: {precision}")
-        print(f"Recall: {recall}")
-        print(f"F1 Score: {f1}")
+        Utils.evaluate_classifier(self.trained_model, X_test, y_test, self.preprocessing, self.label_encoder)
