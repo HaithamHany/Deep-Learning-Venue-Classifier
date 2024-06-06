@@ -19,7 +19,7 @@ def load_model(model_filename, config):
 
         # Extract and print the parameters of the best estimator
         config_params = ["max_depth", "min_samples_split", "min_samples_leaf", "random_state"]
-2
+
         best_params = trained_model.get_params()
 
         print("Best parameters found:")

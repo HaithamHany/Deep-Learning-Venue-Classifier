@@ -1,12 +1,9 @@
-import os
-import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from Preprocessing import Preprocessing
 from SupervisedImageClassifier import SupervisedImageClassifier
 from SemiSupervisedImageClassifier import SemiSupervisedImageClassifier
 from Spinner import Spinner
-from Config import config
 
 # Configuration
 data_dir = 'dataset'
@@ -97,7 +94,7 @@ if __name__ == "__main__":
         print("Selected action: Train a new model")
         spinner.set_msg("Training Model")
         spinner.start()
-        classifier.train_classifier(X_train, y_train, config)
+        classifier.train_classifier(X_train, y_train)
         spinner.stop()
     else:
         print("Selected action: Load a previously trained model")

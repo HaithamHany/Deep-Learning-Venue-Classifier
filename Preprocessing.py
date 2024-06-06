@@ -117,29 +117,8 @@ class Preprocessing:
         labels_encoded = label_encoder.fit_transform(labels)
         return labels_encoded, label_encoder
 
-    def split_labeled_unlabeled(self, X_train, y_train, labeled_ratio=0.8):
-        """
-        Split the training data into labeled and unlabeled sets.
-        """
-        np.random.seed(42)
-        num_samples = len(y_train)
-        indices = np.arange(num_samples)
-        np.random.shuffle(indices)
+    def split_labeled_unlabeled(self, X, y, labeled_ratio):
+        # Split data into labeled and unlabeled sets
+        labeled_size = int(len(X) * labeled_ratio)
+        return X[:labeled_size], y[:labeled_size], X[labeled_size:], y[labeled_size:]
 
-        num_labeled = int(num_samples * labeled_ratio)
-        labeled_indices = indices[:num_labeled]
-        unlabeled_indices = indices[num_labeled:]
-
-        X_labeled = X_train[labeled_indices]
-        y_labeled = y_train[labeled_indices]
-        X_unlabeled = X_train[unlabeled_indices]
-        y_unlabeled = y_train[unlabeled_indices]
-
-        # Set labels of the unlabeled set to -1
-        y_unlabeled[:] = -1
-
-        # Combine labeled and unlabeled data
-        X_combined = np.concatenate((X_labeled, X_unlabeled))
-        y_combined = np.concatenate((y_labeled, y_unlabeled))
-
-        return X_combined, y_combined

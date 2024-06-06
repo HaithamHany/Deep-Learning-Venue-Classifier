@@ -1,19 +1,8 @@
 import joblib
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score
-)
 from sklearn.model_selection import RandomizedSearchCV
-import matplotlib.pyplot as plt
-import seaborn as sns
 import tensorflow as tf
-
 import Utils
 from Config import config
 
@@ -30,7 +19,7 @@ class SupervisedImageClassifier:
     def load_model(self, model_filename):
        self.trained_model = Utils.load_model(model_filename, config)
 
-    def train_classifier(self, X_train, y_train, config):
+    def train_classifier(self, X_train, y_train):
         """
         Train a Decision Tree Classifier with specified hyperparameters.
         Perform a randomized search over the provided hyperparameters.
