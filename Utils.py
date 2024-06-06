@@ -19,17 +19,16 @@ def load_model(model_filename, config):
 
         # Extract and print the parameters of the best estimator
         config_params = ["max_depth", "min_samples_split", "min_samples_leaf", "random_state"]
-        search_params = {"n_iter": config.get("n_iter"), "cv": config.get("cv"), "n_jobs": config.get("n_jobs")}
-
+2
         best_params = trained_model.get_params()
 
         print("Best parameters found:")
         for param in config_params:
+            # Check both standard and nested (base_estimator__) parameters
             if param in best_params:
                 print(f"  {param}: {best_params[param]}")
-        for param, value in search_params.items():
-            if value is not None:
-                print(f"  {param}: {value}")
+            elif f"base_estimator__{param}" in best_params:
+                print(f"  {param}: {best_params[f'base_estimator__{param}']}")
 
         # best_params = self.trained_model.get_params()
         # print("Best parameters found:")

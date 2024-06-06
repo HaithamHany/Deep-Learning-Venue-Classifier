@@ -14,6 +14,7 @@ from sklearn.metrics import (
 import matplotlib.pyplot as plt
 import seaborn as sns
 import Utils
+from Config import config
 
 class SemiSupervisedImageClassifier:
     def __init__(self, preprocessing, label_encoder):
@@ -79,8 +80,3 @@ class SemiSupervisedImageClassifier:
         Evaluate the trained classifier on the test set.
         """
         Utils.evaluate_classifier(self.trained_model, X_test, y_test, self.preprocessing, self.label_encoder)
-
-        print(f"Accuracy: {accuracy}")
-        print(f"Precision: {precision}")
-        print(f"Recall: {recall}")
-        print(f"F1 Score: {f1}")
