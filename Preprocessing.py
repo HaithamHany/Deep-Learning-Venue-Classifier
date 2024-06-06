@@ -135,11 +135,6 @@ class Preprocessing:
         X_unlabeled = X_train[unlabeled_indices]
         y_unlabeled = y_train[unlabeled_indices]
 
-        # Set labels of the unlabeled set to -1
-        y_unlabeled[:] = -1
+        return X_labeled, y_labeled, X_unlabeled, y_unlabeled
 
-        # Combine labeled and unlabeled data
-        X_combined = np.concatenate((X_labeled, X_unlabeled))
-        y_combined = np.concatenate((y_labeled, y_unlabeled))
 
-        return X_combined, y_combined

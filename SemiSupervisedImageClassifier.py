@@ -3,18 +3,10 @@ import numpy as np
 from sklearn.semi_supervised import SelfTrainingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score
-)
-import matplotlib.pyplot as plt
-import seaborn as sns
 import Utils
+import time
 from Config import config
+
 
 class SemiSupervisedImageClassifier:
     def __init__(self, preprocessing, label_encoder):
@@ -28,15 +20,32 @@ class SemiSupervisedImageClassifier:
     def load_model(self, model_filename):
         self.trained_model = Utils.load_model(model_filename, config)
 
-    def train_classifier(self, X_train, y_train, config):
+    def pseudo_label(self, model, X_unlabeled, confidence_threshold):
+        """
+        Pseudo-label the unlabeled data based on model predictions and confidence threshold.
+        """
+        predicts = model.predict_proba(X_unlabeled)
+        max_conf = np.max(predicts, axis=1)
+        pseudo_labels = np.argmax(predicts, axis=1)
+        confident_indices = np.where(max_conf >= confidence_threshold)[0]
+        return X_unlabeled[confident_indices], pseudo_labels[confident_indices]
+
+    def train_classifier(self, X_train, y_train):
         """
         Train a semi-supervised classifier using SelfTrainingClassifier with randomized search for hyperparameter optimization.
         """
         # Split data into labeled and unlabeled
-        X_train_semi, y_train_semi = self.preprocessing.split_labeled_unlabeled(X_train, y_train, labeled_ratio=0.8)
+        X_train_semi, y_train_semi, X_unlabeled, _ = self.preprocessing.split_labeled_unlabeled(X_train, y_train,
+                                                                                                labeled_ratio=0.8)
+
+        # Create an array for y_train with unlabeled samples marked as -1
+        y_train_semi_with_unlabeled = np.concatenate((y_train_semi, -1 * np.ones(len(X_unlabeled), dtype=int)))
+
+        # Combine labeled and unlabeled data for fitting
+        X_combined_train = np.concatenate((X_train_semi, X_unlabeled))
 
         # Flatten images
-        X_train_flat = self.preprocessing.flatten_images(X_train_semi)
+        X_combined_flat = self.preprocessing.flatten_images(X_combined_train)
 
         # Define parameter distributions for RandomizedSearchCV
         param_distributions = {
@@ -52,6 +61,7 @@ class SemiSupervisedImageClassifier:
         self_training_clf = SelfTrainingClassifier(base_clf)
 
         # Perform randomized search with parallelization
+        start_time = time.time()
         randomized_search = RandomizedSearchCV(
             estimator=self_training_clf,
             param_distributions=param_distributions,
@@ -63,17 +73,31 @@ class SemiSupervisedImageClassifier:
             random_state=config.get("random_state")
         )
 
-        randomized_search.fit(X_train_flat, y_train_semi)
-
-        # Save the best trained model
-        self.trained_model = randomized_search.best_estimator_
-        joblib.dump(self.trained_model, 'semi_supervised_model.pkl')
+        randomized_search.fit(X_combined_flat, y_train_semi_with_unlabeled)
 
         best_params = randomized_search.best_params_
         best_score = randomized_search.best_score_
 
         print(f"Best Hyperparameters: {best_params}")
         print(f"Best Cross-Validation Accuracy: {best_score}")
+
+        # Pseudo-label the unlabeled data
+        X_unlabeled_flat = self.preprocessing.flatten_images(X_unlabeled)
+
+        X_pseudo, y_pseudo = self.pseudo_label(randomized_search.best_estimator_, X_unlabeled_flat, 0.97)
+
+        # Combine labeled and pseudo-labeled data
+        X_combined_final = np.concatenate((X_combined_flat, X_pseudo))
+        y_combined_final = np.concatenate((y_train_semi_with_unlabeled, y_pseudo))
+
+        # Train final model on combined data
+        start_time = time.time()
+        self_training_clf.fit(X_combined_final, y_combined_final)
+
+        # Save the trained model
+        self.trained_model = self_training_clf
+        joblib.dump(self.trained_model, 'semi_supervised_model.pkl')
+        print("Model saved successfully.")
 
     def evaluate_classifier(self, X_test, y_test):
         """

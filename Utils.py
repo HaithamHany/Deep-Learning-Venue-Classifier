@@ -10,7 +10,6 @@ from sklearn.metrics import (
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
 def load_model(model_filename, config):
     try:
         # Load the model
@@ -19,7 +18,6 @@ def load_model(model_filename, config):
 
         # Extract and print the parameters of the best estimator
         config_params = ["max_depth", "min_samples_split", "min_samples_leaf", "random_state"]
-2
         best_params = trained_model.get_params()
 
         print("Best parameters found:")
@@ -41,13 +39,11 @@ def load_model(model_filename, config):
         print(f"Error loading the model: {e}")
         return None
 
-
 def evaluate_classifier(trained_model, X_test, y_test, preprocessing, label_encoder):
     if trained_model is None:
         raise ValueError("No trained model found. Please train the model before evaluation.")
 
     X_test_flat = preprocessing.flatten_images(X_test)
-
     y_pred = trained_model.predict(X_test_flat)
 
     accuracy = accuracy_score(y_test, y_pred)
