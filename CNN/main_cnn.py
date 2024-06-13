@@ -14,6 +14,7 @@ num_epochs = 4
 num_classes = 10
 learning_rate = 0.001
 
+
 # Setting a fixed seed for all random number generators to ensure reproducibility
 # and consistent behavior across different runs of the code.
 
@@ -25,7 +26,9 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+
 set_seed(0)
+
 
 def load_data():
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset'))
@@ -52,6 +55,7 @@ def load_data():
     classes = sorted([d.name for d in os.scandir(data_dir) if d.is_dir()])
 
     return train_loader, test_loader, classes, transform
+
 
 def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learning_rate, batch_size, num_epochs):
     model = CNN()
@@ -116,6 +120,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
 
     return accuracy
 
+
 def predict_image(model, classes, transform, image_path):
     image = Image.open(image_path)
     image = transform(image).unsqueeze(0)  # Apply same transformation as training and add batch dimension
@@ -125,24 +130,8 @@ def predict_image(model, classes, transform, image_path):
         _, predicted = torch.max(output.data, 1)
         return classes[predicted.item()]
 
-if __name__ == "__main__":
-    train_loader, test_loader, classes, transform = load_data()
 
-    # Hyperparameter tuning
-    best_accuracy = 0
-    best_params = {}
-    for lr in config_cnn['learning_rate']:
-        for bs in config_cnn['batch_size']:
-            for epochs in config_cnn['num_epochs']:
-                print(f"Training with learning_rate={lr}, batch_size={bs}, num_epochs={epochs}")
-                accuracy = train_and_evaluate_cnn(train_loader, test_loader, classes, transform, lr, bs, epochs)
-                if accuracy > best_accuracy:
-                    best_accuracy = accuracy
-                    best_params = {'learning_rate': lr, 'batch_size': bs, 'num_epochs': epochs}
-
-    print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
-
-    # Option to predict an individual image
+def single_image_prediction_prompt():
     predict_img = input("Do you want to predict an individual image? (yes/no): ").strip().lower()
     if predict_img == 'yes':
         test_images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset', 'test'))
@@ -156,3 +145,29 @@ if __name__ == "__main__":
         model.eval()
         prediction = predict_image(model, classes, transform, image_path)
         print(f'Predicted class for the image: {prediction}')
+
+
+def hyperparameters_tuning():
+    # Hyperparameter tuning
+    best_accuracy = 0
+    best_params = {}
+    for lr in config_cnn['learning_rate']:
+        for bs in config_cnn['batch_size']:
+            for epochs in config_cnn['num_epochs']:
+                print(f"Training with learning_rate={lr}, batch_size={bs}, num_epochs={epochs}")
+                accuracy = train_and_evaluate_cnn(train_loader, test_loader, classes, transform, lr, bs, epochs)
+                if accuracy > best_accuracy:
+                    best_accuracy = accuracy
+                    best_params = {'learning_rate': lr, 'batch_size': bs, 'num_epochs': epochs}
+
+    return best_params, best_accuracy;
+
+
+if __name__ == "__main__":
+    train_loader, test_loader, classes, transform = load_data()
+
+    best_params, best_accuracy = hyperparameters_tuning()
+    print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
+
+    # Option to predict an individual image
+    single_image_prediction_prompt()
