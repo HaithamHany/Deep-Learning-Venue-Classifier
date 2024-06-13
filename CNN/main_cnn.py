@@ -100,9 +100,14 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
         print('Epoch [{}/{}] Complete, Average Loss: {:.4f}, Average Accuracy: {:.2f}%'
               .format(epoch + 1, num_epochs, avg_loss_epoch, avg_acc_epoch))
 
-    # Save the model after training (overwrite existing file)
-    torch.save(model.state_dict(), 'cnn_model.pth')
-    print('Model saved to cnn_model.pth')
+    # Save the model and best parameters after training (overwrite existing file)
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'learning_rate': learning_rate,
+        'batch_size': batch_size,
+        'num_epochs': num_epochs
+    }, 'cnn_model.pth')
+    print('Model and parameters saved to cnn_model.pth')
 
     # Set model to evaluation mode
     model.eval()
@@ -123,6 +128,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
     print('Test Accuracy of the model: {} %'.format(accuracy))
 
     return accuracy
+
 
 
 def evaluate_model(model, test_loader):
@@ -188,8 +194,13 @@ if __name__ == "__main__":
     if os.path.exists('cnn_model.pth'):
         load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
         if load_model == 'yes':
+            checkpoint = torch.load('cnn_model.pth')
             model = CNN()
-            model.load_state_dict(torch.load('cnn_model.pth'))
+            model.load_state_dict(checkpoint['model_state_dict'])
+            learning_rate = checkpoint['learning_rate']
+            batch_size = checkpoint['batch_size']
+            num_epochs = checkpoint['num_epochs']
+            print(f"Loaded model with best params, learning_rate={learning_rate}, batch_size={batch_size}, num_epochs={num_epochs}")
             evaluate_model(model, test_loader)
         else:
             best_params, best_accuracy = hyperparameters_tuning(train_loader, test_loader, classes, transform)
@@ -200,3 +211,4 @@ if __name__ == "__main__":
 
     # Option to predict an individual image
     single_image_prediction_prompt(classes, transform)
+
