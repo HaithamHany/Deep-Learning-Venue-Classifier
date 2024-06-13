@@ -1,40 +1,34 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from Config import config_cnn_architecture
 
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
-        # Defines a sequence of convolutional layers, batch normalization layers, LeakyReLU activations, and max pooling layers.
-        self.conv_layer = nn.Sequential(
-            # Applies a 2D convolution over an input signal
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),
-            # Applies Batch Normalization over a 4D input.
-            nn.BatchNorm2d(32),
-            # Applies the LeakyReLU activation function.
-            nn.LeakyReLU(inplace=True),
-            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
-            nn.LeakyReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.LeakyReLU(inplace=True),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.LeakyReLU(inplace=True),
-            # Applies a 2D max pooling over an input signal
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
+        layers = []
 
-        # Defines a sequence of fully connected layers, dropout layers, and ReLU activations.
+        in_channels = 3  # Assuming RGB images
+        for i in range(config_cnn_architecture["num_layers"]):
+            out_channels = config_cnn_architecture["num_filters"][i]
+            kernel_size = config_cnn_architecture["filter_sizes"][i]
+            stride = config_cnn_architecture["strides"][i]
+            padding = config_cnn_architecture["paddings"][i]
+
+            layers.append(nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding))
+            layers.append(nn.BatchNorm2d(out_channels))
+            layers.append(nn.LeakyReLU(inplace=True))
+
+            in_channels = out_channels
+
+            # Add max pooling after every two convolutional layers
+            if (i + 1) % 2 == 0:
+                layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
+
+        self.conv_layer = nn.Sequential(*layers)
         self.fc_layer = nn.Sequential(
-            # Randomly zeroes some of the elements of the input tensor with probability
             nn.Dropout(p=0.1),
-            # Applies a linear transformation to the incoming data.
-            nn.Linear(8 * 8 * 64, 1000),
-            # Applies the ReLU activation function.
+            nn.Linear(8 * 8 * config_cnn_architecture["num_filters"][-1], 1000),
             nn.ReLU(inplace=True),
             nn.Linear(1000, 512),
             nn.ReLU(inplace=True),

@@ -15,3 +15,11 @@ config_cnn = {
     "batch_size": [32, 64],
     "num_epochs": [4, 10],
 }
+
+config_cnn_architecture = {
+    "num_layers": 4,
+    "filter_sizes": [3, 3, 3, 3],
+    "num_filters": [32, 64, 128, 256],
+    "strides": [1, 1, 1, 1],
+    "paddings": [1, 1, 1, 1],
+}

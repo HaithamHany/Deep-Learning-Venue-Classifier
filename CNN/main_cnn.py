@@ -8,12 +8,11 @@ import random
 import numpy as np
 from CNN import CNN
 from PIL import Image
-from Config import config_cnn  # Import your CNN config
+from Config import config_cnn_architecture, config_cnn  # Import your CNN config
 
 num_epochs = 4
 num_classes = 10
 learning_rate = 0.001
-
 
 # Setting a fixed seed for all random number generators to ensure reproducibility
 # and consistent behavior across different runs of the code.
@@ -26,9 +25,7 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-
 set_seed(0)
-
 
 def load_data():
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset'))
@@ -55,7 +52,6 @@ def load_data():
     classes = sorted([d.name for d in os.scandir(data_dir) if d.is_dir()])
 
     return train_loader, test_loader, classes, transform
-
 
 def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learning_rate, batch_size, num_epochs):
     model = CNN()
@@ -105,7 +101,8 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
         'model_state_dict': model.state_dict(),
         'learning_rate': learning_rate,
         'batch_size': batch_size,
-        'num_epochs': num_epochs
+        'num_epochs': num_epochs,
+        'architecture': config_cnn_architecture
     }, 'cnn_model.pth')
     print('Model and parameters saved to cnn_model.pth')
 
@@ -195,12 +192,14 @@ if __name__ == "__main__":
         load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
         if load_model == 'yes':
             checkpoint = torch.load('cnn_model.pth')
+            config_cnn_architecture.update(
+                checkpoint['architecture'])  # Update the configuration with loaded architecture
             model = CNN()
             model.load_state_dict(checkpoint['model_state_dict'])
             learning_rate = checkpoint['learning_rate']
             batch_size = checkpoint['batch_size']
             num_epochs = checkpoint['num_epochs']
-            print(f"Loaded model with best params, learning_rate={learning_rate}, batch_size={batch_size}, num_epochs={num_epochs}")
+            print(f"Loaded model with learning_rate={learning_rate}, batch_size={batch_size}, num_epochs={num_epochs}")
             evaluate_model(model, test_loader)
         else:
             best_params, best_accuracy = hyperparameters_tuning(train_loader, test_loader, classes, transform)
