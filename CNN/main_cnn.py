@@ -100,6 +100,10 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
         print('Epoch [{}/{}] Complete, Average Loss: {:.4f}, Average Accuracy: {:.2f}%'
               .format(epoch + 1, num_epochs, avg_loss_epoch, avg_acc_epoch))
 
+    # Save the model after training (overwrite existing file)
+    torch.save(model.state_dict(), 'cnn_model.pth')
+    print('Model saved to cnn_model.pth')
+
     # Set model to evaluation mode
     model.eval()
     # Disable gradient computation
