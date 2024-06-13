@@ -70,6 +70,12 @@ def cnn():
                       .format(epoch + 1, num_epochs, i + 1, total_step, loss.item(),
                               (correct / total) * 100))
 
+        # Calculate and print average loss and accuracy for the epoch
+        avg_loss_epoch = sum(loss_list) / len(loss_list)
+        avg_acc_epoch = sum(acc_list) / len(acc_list) * 100
+        print('Epoch [{}/{}] Complete, Average Loss: {:.4f}, Average Accuracy: {:.2f}%'
+              .format(epoch + 1, num_epochs, avg_loss_epoch, avg_acc_epoch))
+
     # Set model to evaluation mode
     model.eval()
     # Disable gradient computation
