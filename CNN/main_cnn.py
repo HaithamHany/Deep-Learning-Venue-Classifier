@@ -109,6 +109,7 @@ def predict_image(model, classes, transform, image_path):
         return classes[predicted.item()]
 
 if __name__ == "__main__":
+
     train_loader, test_loader, classes, transform = load_data()
 
     # Option to train or load the model
@@ -134,3 +135,11 @@ if __name__ == "__main__":
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
         print('Test Accuracy of the loaded model: {} %'.format((correct / total) * 100))
+
+    # Option to predict an individual image
+    predict_img = input("Do you want to predict an individual image? (yes/no): ").strip().lower()
+    if predict_img == 'yes':
+        image_path = input("Enter the path to the image: ").strip()
+        prediction = predict_image(model, classes, transform, image_path)
+        print(f'Predicted class for the image: {prediction}')
+
