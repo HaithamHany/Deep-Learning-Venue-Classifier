@@ -1,11 +1,11 @@
 import os
-
 import torch
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader, random_split
 import torch.nn as nn
 from CNN import CNN
+
 num_epochs = 4
 num_classes = 10
 learning_rate = 0.001
@@ -75,15 +75,16 @@ def cnn():
     # Disable gradient computation
     with torch.no_grad():
         correct = 0
-    total = 0
-    # Iterate test batches
-    for images, labels in test_loader:
-        # Compute predictions
-        outputs = model(images)
-        # Get predicted labels
-    _, predicted = torch.max(outputs.data, 1)
-    total += labels.size(0)
-    correct += (predicted == labels).sum().item()
+        total = 0
+        # Iterate test batches
+        for images, labels in test_loader:
+            # Compute predictions
+            outputs = model(images)
+            # Get predicted labels
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
     print('Test Accuracy of the model on the 10000 test images: {} %'
           .format((correct / total) * 100))
 
