@@ -139,7 +139,13 @@ if __name__ == "__main__":
     # Option to predict an individual image
     predict_img = input("Do you want to predict an individual image? (yes/no): ").strip().lower()
     if predict_img == 'yes':
-        image_path = input("Enter the path to the image: ").strip()
+        test_images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset', 'test'))
+        print("Available images:")
+        for img_name in os.listdir(test_images_dir):
+            print(img_name)
+        image_name = input("Enter the name of the image (e.g., image.jpg): ").strip()
+        image_path = os.path.join(test_images_dir, image_name)
         prediction = predict_image(model, classes, transform, image_path)
         print(f'Predicted class for the image: {prediction}')
+
 
