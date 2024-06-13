@@ -35,9 +35,9 @@ def load_data():
     # Get class names from the directory structure
     classes = sorted([d.name for d in os.scandir(data_dir) if d.is_dir()])
 
-    return train_loader, test_loader, classes
+    return train_loader, test_loader, classes, transform
 
-def cnn(train_loader, test_loader, classes):
+def cnn(train_loader, test_loader, classes, transform):
     model = CNN()
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -101,7 +101,7 @@ def cnn(train_loader, test_loader, classes):
 
 def predict_image(model, classes, transform, image_path):
     image = Image.open(image_path)
-    image = transform(image).unsqueeze(0)
+    image = transform(image).unsqueeze(0)  # Apply same transformation as training and add batch dimension
     model.eval()
     with torch.no_grad():
         output = model(image)
@@ -109,7 +109,7 @@ def predict_image(model, classes, transform, image_path):
         return classes[predicted.item()]
 
 if __name__ == "__main__":
-    train_loader, test_loader, classes = load_data()
+    train_loader, test_loader, classes, transform = load_data()
 
     # Option to train or load the model
     if os.path.exists('cnn_model.pth'):
@@ -120,9 +120,9 @@ if __name__ == "__main__":
             model.eval()
             print("Loaded the model from 'cnn_model.pth'")
         else:
-            model, classes, transform = cnn(train_loader, test_loader, classes)
+            model, classes, transform = cnn(train_loader, test_loader, classes, transform)
     else:
-        model, classes, transform = cnn(train_loader, test_loader, classes)
+        model, classes, transform = cnn(train_loader, test_loader, classes, transform)
 
     # Evaluate on the test dataset
     with torch.no_grad():
@@ -133,6 +133,4 @@ if __name__ == "__main__":
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-        print('Test Accuracy of the model: {} %'.format((correct / total) * 100))
-
-
+        print('Test Accuracy of the loaded model: {} %'.format((correct / total) * 100))
