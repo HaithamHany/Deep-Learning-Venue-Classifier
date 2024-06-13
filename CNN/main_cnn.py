@@ -121,6 +121,21 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
     return accuracy
 
 
+def evaluate_model(model, test_loader):
+    model.eval()
+    with torch.no_grad():
+        correct = 0
+        total = 0
+        for images, labels in test_loader:
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    accuracy = (correct / total) * 100
+    print('Test Accuracy of the loaded model: {} %'.format(accuracy))
+    return accuracy
+
+
 def predict_image(model, classes, transform, image_path):
     image = Image.open(image_path)
     image = transform(image).unsqueeze(0)  # Apply same transformation as training and add batch dimension
@@ -131,7 +146,7 @@ def predict_image(model, classes, transform, image_path):
         return classes[predicted.item()]
 
 
-def single_image_prediction_prompt():
+def single_image_prediction_prompt(classes, transform):
     predict_img = input("Do you want to predict an individual image? (yes/no): ").strip().lower()
     if predict_img == 'yes':
         test_images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset', 'test'))
@@ -147,7 +162,7 @@ def single_image_prediction_prompt():
         print(f'Predicted class for the image: {prediction}')
 
 
-def hyperparameters_tuning():
+def hyperparameters_tuning(train_loader, test_loader, classes, transform):
     # Hyperparameter tuning
     best_accuracy = 0
     best_params = {}
@@ -160,14 +175,24 @@ def hyperparameters_tuning():
                     best_accuracy = accuracy
                     best_params = {'learning_rate': lr, 'batch_size': bs, 'num_epochs': epochs}
 
-    return best_params, best_accuracy;
+    return best_params, best_accuracy
 
 
 if __name__ == "__main__":
     train_loader, test_loader, classes, transform = load_data()
 
-    best_params, best_accuracy = hyperparameters_tuning()
-    print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
+    if os.path.exists('cnn_model.pth'):
+        load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
+        if load_model == 'yes':
+            model = CNN()
+            model.load_state_dict(torch.load('cnn_model.pth'))
+            evaluate_model(model, test_loader)
+        else:
+            best_params, best_accuracy = hyperparameters_tuning(train_loader, test_loader, classes, transform)
+            print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
+    else:
+        best_params, best_accuracy = hyperparameters_tuning(train_loader, test_loader, classes, transform)
+        print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
 
     # Option to predict an individual image
-    single_image_prediction_prompt()
+    single_image_prediction_prompt(classes, transform)
