@@ -5,6 +5,7 @@ from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader, random_split
 import torch.nn as nn
 from CNN import CNN
+from PIL import Image
 
 num_epochs = 4
 num_classes = 10
@@ -36,11 +37,10 @@ def load_data():
 
     return train_loader, test_loader, classes
 
-def cnn():
+def cnn(train_loader, test_loader, classes):
     model = CNN()
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    train_loader, test_loader, classes = load_data()
 
     # Total steps per epoch
     total_step = len(train_loader)
@@ -76,6 +76,9 @@ def cnn():
         print('Epoch [{}/{}] Complete, Average Loss: {:.4f}, Average Accuracy: {:.2f}%'
               .format(epoch + 1, num_epochs, avg_loss_epoch, avg_acc_epoch))
 
+    # Save the model after training
+    torch.save(model.state_dict(), 'cnn_model.pth')
+
     # Set model to evaluation mode
     model.eval()
     # Disable gradient computation
@@ -91,8 +94,36 @@ def cnn():
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    print('Test Accuracy of the model on the 10000 test images: {} %'
+    print('Test Accuracy of the model on the test images: {} %'
           .format((correct / total) * 100))
 
+    return model, classes, transform
+
+def predict_image(model, classes, transform, image_path):
+    image = Image.open(image_path)
+    image = transform(image).unsqueeze(0)
+    model.eval()
+    with torch.no_grad():
+        output = model(image)
+        _, predicted = torch.max(output.data, 1)
+        return classes[predicted.item()]
+
 if __name__ == "__main__":
-    cnn()
+    train_loader, test_loader, classes = load_data()
+    model, classes, transform = cnn(train_loader, test_loader, classes)
+
+    # Load the model for evaluation
+    model.load_state_dict(torch.load('cnn_model.pth'))
+    model.eval()
+
+    # Evaluate on the test dataset
+    with torch.no_grad():
+        correct = 0
+        total = 0
+        for images, labels in test_loader:
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+        print('Test Accuracy of the loaded model: {} %'.format((correct / total) * 100))
+
