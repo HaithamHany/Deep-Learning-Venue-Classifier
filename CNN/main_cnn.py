@@ -110,11 +110,19 @@ def predict_image(model, classes, transform, image_path):
 
 if __name__ == "__main__":
     train_loader, test_loader, classes = load_data()
-    model, classes, transform = cnn(train_loader, test_loader, classes)
 
-    # Load the model for evaluation
-    model.load_state_dict(torch.load('cnn_model.pth'))
-    model.eval()
+    # Option to train or load the model
+    if os.path.exists('cnn_model.pth'):
+        load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
+        if load_model == 'yes':
+            model = CNN()
+            model.load_state_dict(torch.load('cnn_model.pth'))
+            model.eval()
+            print("Loaded the model from 'cnn_model.pth'")
+        else:
+            model, classes, transform = cnn(train_loader, test_loader, classes)
+    else:
+        model, classes, transform = cnn(train_loader, test_loader, classes)
 
     # Evaluate on the test dataset
     with torch.no_grad():
@@ -125,5 +133,6 @@ if __name__ == "__main__":
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-        print('Test Accuracy of the loaded model: {} %'.format((correct / total) * 100))
+        print('Test Accuracy of the model: {} %'.format((correct / total) * 100))
+
 
