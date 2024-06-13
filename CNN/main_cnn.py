@@ -4,12 +4,27 @@ import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader, random_split
 import torch.nn as nn
+import random
+import numpy as np
 from CNN import CNN
 from PIL import Image
 
 num_epochs = 4
 num_classes = 10
 learning_rate = 0.001
+
+# Setting a fixed seed for all random number generators to ensure reproducibility
+# and consistent behavior across different runs of the code.
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+set_seed(0)
 
 def load_data():
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset'))
@@ -147,5 +162,3 @@ if __name__ == "__main__":
         image_path = os.path.join(test_images_dir, image_name)
         prediction = predict_image(model, classes, transform, image_path)
         print(f'Predicted class for the image: {prediction}')
-
-
