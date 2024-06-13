@@ -8,3 +8,10 @@ config = {
     "cv": 3,               # Number of folds in cross-validation
     "n_jobs": -1,          # Use all available CPU cores
 }
+
+# Configuration dictionary for CNN hyperparameters
+config_cnn = {
+    "learning_rate": [0.001, 0.0001],
+    "batch_size": [32, 64],
+    "num_epochs": [4, 10],
+}

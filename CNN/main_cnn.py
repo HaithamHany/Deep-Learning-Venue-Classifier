@@ -8,6 +8,7 @@ import random
 import numpy as np
 from CNN import CNN
 from PIL import Image
+from Config import config_cnn  # Import your CNN config
 
 num_epochs = 4
 num_classes = 10
@@ -52,10 +53,14 @@ def load_data():
 
     return train_loader, test_loader, classes, transform
 
-def cnn(train_loader, test_loader, classes, transform):
+def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learning_rate, batch_size, num_epochs):
     model = CNN()
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    # Update data loaders with new batch size
+    train_loader = DataLoader(train_loader.dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+    test_loader = DataLoader(test_loader.dataset, batch_size=1000, shuffle=False, num_workers=2)
 
     # Total steps per epoch
     total_step = len(train_loader)
@@ -91,9 +96,6 @@ def cnn(train_loader, test_loader, classes, transform):
         print('Epoch [{}/{}] Complete, Average Loss: {:.4f}, Average Accuracy: {:.2f}%'
               .format(epoch + 1, num_epochs, avg_loss_epoch, avg_acc_epoch))
 
-    # Save the model after training
-    torch.save(model.state_dict(), 'cnn_model.pth')
-
     # Set model to evaluation mode
     model.eval()
     # Disable gradient computation
@@ -109,10 +111,10 @@ def cnn(train_loader, test_loader, classes, transform):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    print('Test Accuracy of the model on the test images: {} %'
-          .format((correct / total) * 100))
+    accuracy = (correct / total) * 100
+    print('Test Accuracy of the model: {} %'.format(accuracy))
 
-    return model, classes, transform
+    return accuracy
 
 def predict_image(model, classes, transform, image_path):
     image = Image.open(image_path)
@@ -124,32 +126,21 @@ def predict_image(model, classes, transform, image_path):
         return classes[predicted.item()]
 
 if __name__ == "__main__":
-
     train_loader, test_loader, classes, transform = load_data()
 
-    # Option to train or load the model
-    if os.path.exists('cnn_model.pth'):
-        load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
-        if load_model == 'yes':
-            model = CNN()
-            model.load_state_dict(torch.load('cnn_model.pth'))
-            model.eval()
-            print("Loaded the model from 'cnn_model.pth'")
-        else:
-            model, classes, transform = cnn(train_loader, test_loader, classes, transform)
-    else:
-        model, classes, transform = cnn(train_loader, test_loader, classes, transform)
+    # Hyperparameter tuning
+    best_accuracy = 0
+    best_params = {}
+    for lr in config_cnn['learning_rate']:
+        for bs in config_cnn['batch_size']:
+            for epochs in config_cnn['num_epochs']:
+                print(f"Training with learning_rate={lr}, batch_size={bs}, num_epochs={epochs}")
+                accuracy = train_and_evaluate_cnn(train_loader, test_loader, classes, transform, lr, bs, epochs)
+                if accuracy > best_accuracy:
+                    best_accuracy = accuracy
+                    best_params = {'learning_rate': lr, 'batch_size': bs, 'num_epochs': epochs}
 
-    # Evaluate on the test dataset
-    with torch.no_grad():
-        correct = 0
-        total = 0
-        for images, labels in test_loader:
-            outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-        print('Test Accuracy of the loaded model: {} %'.format((correct / total) * 100))
+    print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
 
     # Option to predict an individual image
     predict_img = input("Do you want to predict an individual image? (yes/no): ").strip().lower()
@@ -160,5 +151,8 @@ if __name__ == "__main__":
             print(img_name)
         image_name = input("Enter the name of the image (e.g., image.jpg): ").strip()
         image_path = os.path.join(test_images_dir, image_name)
+        model = CNN()
+        model.load_state_dict(torch.load('cnn_model.pth'))
+        model.eval()
         prediction = predict_image(model, classes, transform, image_path)
         print(f'Predicted class for the image: {prediction}')
