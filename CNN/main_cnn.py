@@ -45,9 +45,12 @@ def load_data():
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset'))
     # preprocessing
     transform = transforms.Compose([
-        transforms.Resize((32, 32)),  # Resize images to 32x32 if they are not already
+        transforms.Resize((128, 128)),  # Resize images to 128x128 if they are not already
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(10),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
         transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # Normalize images
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
     # Load dataset
