@@ -28,7 +28,7 @@ class CNN(nn.Module):
         self.conv_layer = nn.Sequential(*layers)
         self.fc_layer = nn.Sequential(
             nn.Dropout(p=0.1),
-            nn.Linear(8 * 8 * config_cnn_architecture["num_filters"][-1], 1000),
+            nn.Linear(3 * 3 * 512, 1000),  # Adjusted input size
             nn.ReLU(inplace=True),
             nn.Linear(1000, 512),
             nn.ReLU(inplace=True),
@@ -37,10 +37,8 @@ class CNN(nn.Module):
         )
 
     def forward(self, x):
-        # conv layers.  Passes the input x through the convolutional layers.
-        x = self.conv_layer(x)
-        # flatten. Flattens the output of the convolutional layers to prepare it for the fully connected layers.
-        x = x.view(x.size(0), -1)
-        # fc layer. Passes the flattened data through the fully connected layers.
-        x = self.fc_layer(x)
+        x = self.conv_layer(x)  # Apply convolutional layers
+        # print("Output shape before flattening:", x.shape)  # Print the shape here
+        x = x.view(x.size(0), -1)  # Flatten the output
+        x = self.fc_layer(x)  # Apply fully connected layers
         return x
