@@ -216,10 +216,10 @@ if __name__ == "__main__":
             print(f"Loaded model with learning_rate={learning_rate}, batch_size={batch_size}, num_epochs={num_epochs}")
             evaluate_model(model, test_loader)
         else:
-            best_params, best_accuracy = hyperparameters_tuning(train_loader, test_loader, classes, transform)
+            best_params, best_accuracy = hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform)
             print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
     else:
-        best_params, best_accuracy = hyperparameters_tuning(train_loader, test_loader, classes, transform)
+        best_params, best_accuracy = hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform)
         print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
 
     # Option to predict an individual image
