@@ -200,7 +200,7 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
 
 
 if __name__ == "__main__":
-    train_loader, test_loader, classes, transform = load_data()
+    train_loader, val_loader, test_loader, classes, transform = load_data()
 
     if os.path.exists('cnn_model.pth'):
         load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
