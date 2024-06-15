@@ -1,12 +1,12 @@
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from Preprocessing import Preprocessing
-from SupervisedImageClassifier import SupervisedImageClassifier
-from SemiSupervisedImageClassifier import SemiSupervisedImageClassifier
-from Spinner import Spinner
+from DecisionTree.SupervisedImageClassifier import SupervisedImageClassifier
+from DecisionTree.SemiSupervisedImageClassifier import SemiSupervisedImageClassifier
+from DecisionTree.Spinner import Spinner
 
 # Configuration
-data_dir = 'dataset'
+data_dir = '../dataset'
 img_height, img_width = 128, 128
 
 
