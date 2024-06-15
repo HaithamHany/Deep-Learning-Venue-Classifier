@@ -56,19 +56,23 @@ def load_data():
     # Load dataset
     dataset = ImageFolder(root=data_dir, transform=transform)
 
-    # Split dataset into training and testing sets
-    train_size = int(0.8 * len(dataset))  # 80% for training
-    test_size = len(dataset) - train_size  # 20% for testing
-    train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+    # Split dataset into training, validation, and testing sets
+    total_count = len(dataset)
+    train_count = int(0.7 * total_count)
+    val_count = int(0.15 * total_count)
+    test_count = total_count - train_count - val_count
+
+    train_dataset, val_dataset, test_dataset = random_split(dataset, [train_count, val_count, test_count])
 
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
-    test_loader = DataLoader(test_dataset, batch_size=1000, shuffle=False, num_workers=2)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=2)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
 
     # Get class names from the directory structure
     classes = sorted([d.name for d in os.scandir(data_dir) if d.is_dir()])
 
-    return train_loader, test_loader, classes, transform
+    return train_loader, val_loader, test_loader, classes, transform
 
 def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learning_rate, batch_size, num_epochs):
     model = CNN().to(device)
