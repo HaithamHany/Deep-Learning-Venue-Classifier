@@ -183,7 +183,7 @@ def single_image_prediction_prompt(classes, transform):
         print(f'Predicted class for the image: {prediction}')
 
 
-def hyperparameters_tuning(train_loader, test_loader, classes, transform):
+def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform):
     # Hyperparameter tuning
     best_accuracy = 0
     best_params = {}
@@ -191,9 +191,9 @@ def hyperparameters_tuning(train_loader, test_loader, classes, transform):
         for bs in config_cnn['batch_size']:
             for epochs in config_cnn['num_epochs']:
                 print(f"Training with learning_rate={lr}, batch_size={bs}, num_epochs={epochs}")
-                accuracy = train_and_evaluate_cnn(train_loader, test_loader, classes, transform, lr, bs, epochs)
-                if accuracy > best_accuracy:
-                    best_accuracy = accuracy
+                _, precision, recall, f1, _ = train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, transform, lr, bs, epochs)
+                if precision > best_accuracy:  # Assuming you want to use precision or choose another metric
+                    best_accuracy = precision
                     best_params = {'learning_rate': lr, 'batch_size': bs, 'num_epochs': epochs}
 
     return best_params, best_accuracy
