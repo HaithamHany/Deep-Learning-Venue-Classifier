@@ -74,7 +74,7 @@ def load_data():
 
     return train_loader, val_loader, test_loader, classes, transform
 
-def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learning_rate, batch_size, num_epochs):
+def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, transform, learning_rate, batch_size, num_epochs):
     model = CNN().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -82,6 +82,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
     # Update data loaders with new batch size
     train_loader = DataLoader(train_loader.dataset, batch_size=batch_size, shuffle=True, num_workers=2)
     test_loader = DataLoader(test_loader.dataset, batch_size=1000, shuffle=False, num_workers=2)
+    val_loader = DataLoader(val_loader.dataset, batch_size=batch_size, shuffle=False, num_workers=2)
 
     # Total steps per epoch
     total_step = len(train_loader)
@@ -89,33 +90,28 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
     acc_list = []
 
     for epoch in range(num_epochs):
-        for i, (images, labels) in enumerate(train_loader):  # Iterate batches
-            # Forward pass
-            outputs = model(images)  # Compute predictions
-            loss = criterion(outputs, labels)  # Calculate loss
-            loss_list.append(loss.item())  # Record loss
+        model.train()
+        for images, labels in train_loader:
+            outputs = model(images)
+            loss = criterion(outputs, labels)
 
-            # Backprop and optimisation
-            optimizer.zero_grad()  # Clear gradients
-            loss.backward()  # Compute gradients
-            optimizer.step()  # Update weights
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-            # Train accuracy
-            total = labels.size(0)  # Total labels
-            _, predicted = torch.max(outputs.data, 1)  # Predicted labels
-            correct = (predicted == labels).sum().item()  # Correct predictions
-            acc_list.append(correct / total)  # Record accuracy
+        # Validation phase
+        model.eval()
+        with torch.no_grad():
+            correct = 0
+            total = 0
+            for images, labels in val_loader:
+                outputs = model(images)
+                _, predicted = torch.max(outputs.data, 1)
+                correct += (predicted == labels).sum().item()
+                total += labels.size(0)
 
-            if (i + 1) % 100 == 0:
-                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
-                      .format(epoch + 1, num_epochs, i + 1, total_step, loss.item(),
-                              (correct / total) * 100))
-
-        # Calculate and print average loss and accuracy for the epoch
-        avg_loss_epoch = sum(loss_list) / len(loss_list)
-        avg_acc_epoch = sum(acc_list) / len(acc_list) * 100
-        print('Epoch [{}/{}] Complete, Average Loss: {:.4f}, Average Accuracy: {:.2f}%'
-              .format(epoch + 1, num_epochs, avg_loss_epoch, avg_acc_epoch))
+        val_accuracy = 100 * correct / total
+        print(f'Epoch [{epoch + 1}/{num_epochs}], Validation Accuracy: {val_accuracy:.2f}%')
 
     # Save the model and best parameters after training (overwrite existing file)
     torch.save({
@@ -125,29 +121,9 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
         'num_epochs': num_epochs,
         'architecture': config_cnn_architecture
     }, 'cnn_model.pth')
-    print('Model and parameters saved to cnn_model.pth')
 
-    # Set model to evaluation mode
-    model.eval()
-    # Disable gradient computation
-    with torch.no_grad():
-        correct = 0
-        total = 0
-        # Iterate test batches
-        for images, labels in test_loader:
-            # Compute predictions
-            outputs = model(images)
-            # Get predicted labels
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-
-    accuracy = (correct / total) * 100
-    print('Test Accuracy of the model: {} %'.format(accuracy))
-
-    return accuracy
-
-
+    # Evaluate on test set
+    return evaluate_model(model, test_loader)
 
 def evaluate_model(model, test_loader):
     model.eval()
