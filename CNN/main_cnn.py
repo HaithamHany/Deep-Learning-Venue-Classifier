@@ -11,6 +11,19 @@ from PIL import Image
 from Config import config_cnn_architecture, config_cnn  # Import your CNN config
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
 
+# Check if CUDA is available
+if torch.cuda.is_available():
+    print("CUDA is available!")
+    # Check the number of GPUs and their names:
+    num_gpus = torch.cuda.device_count()
+    print(f"Number of GPUs available: {num_gpus}")
+    for i in range(num_gpus):
+        print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
+else:
+    print("CUDA is not available!")
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 num_epochs = 4
 num_classes = 10
 learning_rate = 0.001
@@ -55,7 +68,7 @@ def load_data():
     return train_loader, test_loader, classes, transform
 
 def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learning_rate, batch_size, num_epochs):
-    model = CNN()
+    model = CNN().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -179,7 +192,7 @@ def single_image_prediction_prompt(classes, transform):
             print(img_name)
         image_name = input("Enter the name of the image (e.g., image.jpg): ").strip()
         image_path = os.path.join(test_images_dir, image_name)
-        model = CNN()
+        model = CNN().to(device)
         checkpoint = torch.load('cnn_model.pth')
         model.load_state_dict(checkpoint['model_state_dict'])
         model.eval()
@@ -212,7 +225,7 @@ if __name__ == "__main__":
             checkpoint = torch.load('cnn_model.pth')
             config_cnn_architecture.update(
                 checkpoint['architecture'])  # Update the configuration with loaded architecture
-            model = CNN()
+            model = CNN().to(device)
             model.load_state_dict(checkpoint['model_state_dict'])
             learning_rate = checkpoint['learning_rate']
             batch_size = checkpoint['batch_size']
