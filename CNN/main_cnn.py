@@ -9,6 +9,7 @@ import numpy as np
 from CNN import CNN
 from PIL import Image
 from Config import config_cnn_architecture, config_cnn  # Import your CNN config
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
 
 num_epochs = 4
 num_classes = 10
@@ -130,18 +131,34 @@ def train_and_evaluate_cnn(train_loader, test_loader, classes, transform, learni
 
 def evaluate_model(model, test_loader):
     model.eval()
+
+    # Variables to gather full outputs
+    true_labels = []
+    predictions = []
+
     with torch.no_grad():
-        correct = 0
-        total = 0
         for images, labels in test_loader:
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    accuracy = (correct / total) * 100
-    print('Test Accuracy of the loaded model: {} %'.format(accuracy))
-    return accuracy
+            predictions.extend(predicted.cpu().numpy())  # Save predictions
+            true_labels.extend(labels.cpu().numpy())  # Save true labels
 
+    # Calculate metrics using sklearn
+    accuracy = accuracy_score(true_labels, predictions)
+    precision = precision_score(true_labels, predictions, average='weighted', zero_division=0)
+    recall = recall_score(true_labels, predictions, average='weighted', zero_division=0)
+    f1 = f1_score(true_labels, predictions, average='weighted', zero_division=0)
+    conf_matrix = confusion_matrix(true_labels, predictions)
+
+    # Print metrics
+    print(f"Test Accuracy: {accuracy * 100:.2f}%")
+    print(f"Precision: {precision:.2f}")
+    print(f"Recall: {recall:.2f}")
+    print(f"F1 Score: {f1:.2f}")
+    print("Confusion Matrix:")
+    print(conf_matrix)
+
+    return accuracy, precision, recall, f1, conf_matrix
 
 def predict_image(model, classes, transform, image_path):
     image = Image.open(image_path)
