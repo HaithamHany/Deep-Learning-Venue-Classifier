@@ -28,7 +28,7 @@ class CNN(nn.Module):
         self.conv_layer = nn.Sequential(*layers)
         self.fc_layer = nn.Sequential(
             nn.Dropout(p=0.1),
-            nn.Linear(8 * 8 * config_cnn_architecture["num_filters"][-1], 1000),
+            nn.Linear(3 * 3 * config_cnn_architecture["num_filters"][-1], 1000),
             nn.ReLU(inplace=True),
             nn.Linear(1000, 512),
             nn.ReLU(inplace=True),
