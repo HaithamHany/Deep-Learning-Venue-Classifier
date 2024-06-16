@@ -11,15 +11,15 @@ config = {
 
 # Configuration dictionary for CNN hyperparameters
 config_cnn = {
-    "learning_rate": [0.001, 0.0001],
-    "batch_size": [32, 64],
-    "num_epochs": [4, 10],
+    "learning_rate": [0.001, 0.0005, 0.0001],
+    "batch_size": [16, 32, 64, 128],
+    "num_epochs": [10, 50],
 }
 
 config_cnn_architecture = {
-    "num_layers": 4,
-    "filter_sizes": [3, 3, 3, 3],
-    "num_filters": [32, 64, 128, 256],
-    "strides": [1, 1, 1, 1],
-    "paddings": [1, 1, 1, 1],
+    "num_layers": 6,
+    "filter_sizes": [3, 3, 5, 5, 7, 7],
+    "num_filters": [32, 64, 128, 256, 512, 512],
+    "strides": [1, 1, 1, 2, 1, 1],
+    "paddings": [1, 1, 1, 1, 1, 1],
 }
