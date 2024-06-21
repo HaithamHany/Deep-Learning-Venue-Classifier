@@ -14,13 +14,14 @@ from sklearn.metrics import precision_score, recall_score, f1_score, confusion_m
 # Check if CUDA is available
 if torch.cuda.is_available():
     print("CUDA is available!")
-    # Check the number of GPUs and their names:
+    device = torch.device("cuda")  # Changed: Directly assign device
     num_gpus = torch.cuda.device_count()
     print(f"Number of GPUs available: {num_gpus}")
     for i in range(num_gpus):
         print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
 else:
     print("CUDA is not available!")
+    device = torch.device("cpu")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -92,6 +93,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
     for epoch in range(num_epochs):
         model.train()
         for images, labels in train_loader:
+            images, labels = images.to(device), labels.to(device)
             outputs = model(images)
             loss = criterion(outputs, labels)
 
@@ -105,6 +107,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
             correct = 0
             total = 0
             for images, labels in val_loader:
+                images, labels = images.to(device), labels.to(device)
                 outputs = model(images)
                 _, predicted = torch.max(outputs.data, 1)
                 correct += (predicted == labels).sum().item()
@@ -134,6 +137,7 @@ def evaluate_model(model, test_loader):
 
     with torch.no_grad():
         for images, labels in test_loader:
+            images, labels = images.to(device), labels.to(device)
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
             predictions.extend(predicted.cpu().numpy())  # Save predictions
@@ -205,7 +209,7 @@ if __name__ == "__main__":
     if os.path.exists('cnn_model.pth'):
         load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
         if load_model == 'yes':
-            checkpoint = torch.load('cnn_model.pth')
+            checkpoint = torch.load('cnn_model.pth', map_location=device)
             config_cnn_architecture.update(
                 checkpoint['architecture'])  # Update the configuration with loaded architecture
             model = CNN().to(device)
