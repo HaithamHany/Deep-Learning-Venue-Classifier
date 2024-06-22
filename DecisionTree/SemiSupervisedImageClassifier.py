@@ -30,7 +30,7 @@ class SemiSupervisedImageClassifier:
         confident_indices = np.where(max_conf >= confidence_threshold)[0]
         return X_unlabeled[confident_indices], pseudo_labels[confident_indices]
 
-    def train_classifier(self, X_train, y_train):
+    def train_classifier(self, X_train, y_train, X_val, y_val):
         """
         Train a semi-supervised classifier using SelfTrainingClassifier with randomized search for hyperparameter optimization.
         """
@@ -73,7 +73,8 @@ class SemiSupervisedImageClassifier:
             random_state=config.get("random_state")
         )
 
-        randomized_search.fit(X_combined_flat, y_train_semi_with_unlabeled)
+        randomized_search.fit(X_combined_flat, y_train_semi_with_unlabeled, validation_data=(X_val, y_val))
+
 
         best_params = randomized_search.best_params_
         best_score = randomized_search.best_score_
