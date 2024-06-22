@@ -95,6 +95,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
     total_step = len(train_loader)
     loss_list = []
     acc_list = []
+    val_acc_list = []
 
     for epoch in range(num_epochs):
         model.train()
@@ -120,6 +121,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
                 total += labels.size(0)
 
         val_accuracy = 100 * correct / total
+        val_acc_list.append(val_accuracy)
         print(f'Epoch [{epoch + 1}/{num_epochs}], Validation Accuracy: {val_accuracy:.2f}%')
 
     # Save the model and best parameters after training (overwrite existing file)
@@ -134,7 +136,18 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
     # Evaluate on test set
     accuracy, precision, recall, f1, conf_matrix, per_class_metrics = evaluate_model(model, test_loader, classes)
 
-    return precision, recall, f1, conf_matrix
+    return precision, recall, f1, conf_matrix, val_acc_list
+
+def plot_accuracy(epochs, accuracy_list):
+    plt.figure(figsize=(10, 5))
+    plt.plot(range(1, epochs + 1), accuracy_list, marker='o', color='b', label='Validation Accuracy')
+    plt.title('Validation Accuracy over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.xticks(range(1, epochs + 1))
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 
 def evaluate_model(model, test_loader, classes):
@@ -239,15 +252,20 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
     # Hyperparameter tuning
     best_accuracy = 0
     best_params = {}
+    best_val_acc = []
     for lr in config_cnn['learning_rate']:
         for bs in config_cnn['batch_size']:
             for epochs in config_cnn['num_epochs']:
                 print(f"Training with learning_rate={lr}, batch_size={bs}, num_epochs={epochs}")
-                precision, recall, f1, _ = train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes,
+                precision, recall, f1, _, val_acc_list = train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes,
                                                                   transform, lr, bs, epochs)
                 if precision > best_accuracy:  # Assuming you want to use precision or choose another metric
                     best_accuracy = precision
                     best_params = {'learning_rate': lr, 'batch_size': bs, 'num_epochs': epochs}
+                    best_val_acc = val_acc_list
+    if best_params:
+        # plot the best validation accuracies
+        plot_accuracy(best_params['num_epochs'], best_val_acc)
 
     return best_params, best_accuracy
 
