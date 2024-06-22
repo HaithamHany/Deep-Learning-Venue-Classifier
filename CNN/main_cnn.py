@@ -10,6 +10,8 @@ from CNN import CNN
 from PIL import Image
 from Config import config_cnn_architecture, config_cnn  # Import your CNN config
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Check if CUDA is available
 if torch.cuda.is_available():
@@ -26,7 +28,7 @@ else:
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 num_epochs = 4
-num_classes = 10
+num_classes = 5
 learning_rate = 0.001
 
 # Setting a fixed seed for all random number generators to ensure reproducibility
@@ -66,9 +68,9 @@ def load_data():
     train_dataset, val_dataset, test_dataset = random_split(dataset, [train_count, val_count, test_count])
 
     # Create data loaders
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=2)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=2, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2, pin_memory=True)
 
     # Get class names from the directory structure
     classes = sorted([d.name for d in os.scandir(data_dir) if d.is_dir()])
@@ -126,9 +128,11 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
     }, 'cnn_model.pth')
 
     # Evaluate on test set
-    return evaluate_model(model, test_loader)
+    accuracy, precision, recall, f1, conf_matrix, per_class_metrics = evaluate_model(model, test_loader, classes)
 
-def evaluate_model(model, test_loader):
+    return precision, recall, f1, conf_matrix
+
+def evaluate_model(model, test_loader, classes):
     model.eval()
 
     # Variables to gather full outputs
@@ -145,20 +149,53 @@ def evaluate_model(model, test_loader):
 
     # Calculate metrics using sklearn
     accuracy = accuracy_score(true_labels, predictions)
-    precision = precision_score(true_labels, predictions, average='weighted', zero_division=0)
-    recall = recall_score(true_labels, predictions, average='weighted', zero_division=0)
-    f1 = f1_score(true_labels, predictions, average='weighted', zero_division=0)
+    overall_precision = precision_score(true_labels, predictions, average='weighted', zero_division=0)
+    overall_recall = recall_score(true_labels, predictions, average='weighted', zero_division=0)
+    overall_f1 = f1_score(true_labels, predictions, average='weighted', zero_division=0)
     conf_matrix = confusion_matrix(true_labels, predictions)
 
-    # Print metrics
-    print(f"Test Accuracy: {accuracy * 100:.2f}%")
-    print(f"Precision: {precision:.2f}")
-    print(f"Recall: {recall:.2f}")
-    print(f"F1 Score: {f1:.2f}")
+    # Print overall metrics
+    print(f"Overall Test Accuracy: {accuracy * 100:.2f}%")
+    print(f"Overall Precision: {overall_precision:.2f}")
+    print(f"Overall Recall: {overall_recall:.2f}")
+    print(f"Overall F1 Score: {overall_f1:.2f}")
     print("Confusion Matrix:")
     print(conf_matrix)
 
-    return accuracy, precision, recall, f1, conf_matrix
+    # Plot confusion matrix as an image
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(conf_matrix, annot=True, cmap="Blues", fmt="d", xticklabels=classes, yticklabels=classes)
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title('Confusion Matrix')
+    plt.show()
+
+    # Calculate and print per-class metrics
+    per_class_metrics = {}
+    for i, class_label in enumerate(classes):
+        class_true = [1 if x == i else 0 for x in true_labels]
+        class_pred = [1 if x == i else 0 for x in predictions]
+
+        class_accuracy = accuracy_score(class_true, class_pred)
+        class_precision = precision_score(class_true, class_pred, zero_division=0)
+        class_recall = recall_score(class_true, class_pred, zero_division=0)
+        class_f1 = f1_score(class_true, class_pred, zero_division=0)
+
+        per_class_metrics[class_label] = {
+            'Accuracy': class_accuracy,
+            'Precision': class_precision,
+            'Recall': class_recall,
+            'F1 Score': class_f1
+        }
+
+        print(f"Metrics for class {class_label}:")
+        print(f"  Accuracy: {class_accuracy * 100:.2f}%")
+        print(f"  Precision: {class_precision:.2f}")
+        print(f"  Recall: {class_recall:.2f}")
+        print(f"  F1 Score: {class_f1:.2f}")
+
+    return accuracy, overall_precision, overall_recall, overall_f1, conf_matrix, per_class_metrics
+
 
 def predict_image(model, classes, transform, image_path):
     image = Image.open(image_path)
@@ -195,7 +232,7 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
         for bs in config_cnn['batch_size']:
             for epochs in config_cnn['num_epochs']:
                 print(f"Training with learning_rate={lr}, batch_size={bs}, num_epochs={epochs}")
-                _, precision, recall, f1, _ = train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, transform, lr, bs, epochs)
+                precision, recall, f1, _ = train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, transform, lr, bs, epochs)
                 if precision > best_accuracy:  # Assuming you want to use precision or choose another metric
                     best_accuracy = precision
                     best_params = {'learning_rate': lr, 'batch_size': bs, 'num_epochs': epochs}
@@ -209,7 +246,7 @@ if __name__ == "__main__":
     if os.path.exists('cnn_model.pth'):
         load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
         if load_model == 'yes':
-            checkpoint = torch.load('cnn_model.pth', map_location=device)
+            checkpoint = torch.load('cnn_model.pth')
             config_cnn_architecture.update(
                 checkpoint['architecture'])  # Update the configuration with loaded architecture
             model = CNN().to(device)
@@ -218,7 +255,7 @@ if __name__ == "__main__":
             batch_size = checkpoint['batch_size']
             num_epochs = checkpoint['num_epochs']
             print(f"Loaded model with learning_rate={learning_rate}, batch_size={batch_size}, num_epochs={num_epochs}")
-            evaluate_model(model, test_loader)
+            evaluate_model(model, test_loader, classes)
         else:
             best_params, best_accuracy = hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform)
             print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
