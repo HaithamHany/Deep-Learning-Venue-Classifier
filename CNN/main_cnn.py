@@ -31,6 +31,7 @@ num_epochs = 4
 num_classes = 5
 learning_rate = 0.001
 
+
 # Setting a fixed seed for all random number generators to ensure reproducibility
 # and consistent behavior across different runs of the code.
 
@@ -42,7 +43,9 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+
 set_seed(0)
+
 
 def load_data():
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset'))
@@ -77,7 +80,9 @@ def load_data():
 
     return train_loader, val_loader, test_loader, classes, transform
 
-def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, transform, learning_rate, batch_size, num_epochs):
+
+def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, transform, learning_rate, batch_size,
+                           num_epochs):
     model = CNN().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -131,6 +136,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
     accuracy, precision, recall, f1, conf_matrix, per_class_metrics = evaluate_model(model, test_loader, classes)
 
     return precision, recall, f1, conf_matrix
+
 
 def evaluate_model(model, test_loader, classes):
     model.eval()
@@ -208,20 +214,18 @@ def predict_image(model, classes, transform, image_path):
 
 
 def single_image_prediction_prompt(classes, transform):
-    predict_img = input("Do you want to predict an individual image? (yes/no): ").strip().lower()
-    if predict_img == 'yes':
-        test_images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset', 'test'))
-        print("Available images:")
-        for img_name in os.listdir(test_images_dir):
-            print(img_name)
-        image_name = input("Enter the name of the image (e.g., image.jpg): ").strip()
-        image_path = os.path.join(test_images_dir, image_name)
-        model = CNN().to(device)
-        checkpoint = torch.load('cnn_model.pth')
-        model.load_state_dict(checkpoint['model_state_dict'])
-        model.eval()
-        prediction = predict_image(model, classes, transform, image_path)
-        print(f'Predicted class for the image: {prediction}')
+    test_images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset', 'test'))
+    print("Available images:")
+    for img_name in os.listdir(test_images_dir):
+        print(img_name)
+    image_name = input("Enter the name of the image (e.g., image.jpg): ").strip()
+    image_path = os.path.join(test_images_dir, image_name)
+    model = CNN().to(device)
+    checkpoint = torch.load('cnn_model.pth')
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.eval()
+    prediction = predict_image(model, classes, transform, image_path)
+    print(f'Predicted class for the image: {prediction}')
 
 
 def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform):
@@ -232,7 +236,8 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
         for bs in config_cnn['batch_size']:
             for epochs in config_cnn['num_epochs']:
                 print(f"Training with learning_rate={lr}, batch_size={bs}, num_epochs={epochs}")
-                precision, recall, f1, _ = train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, transform, lr, bs, epochs)
+                precision, recall, f1, _ = train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes,
+                                                                  transform, lr, bs, epochs)
                 if precision > best_accuracy:  # Assuming you want to use precision or choose another metric
                     best_accuracy = precision
                     best_params = {'learning_rate': lr, 'batch_size': bs, 'num_epochs': epochs}
@@ -240,34 +245,48 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
     return best_params, best_accuracy
 
 
+
+
 def run_cnn():
     train_loader, val_loader, test_loader, classes, transform = load_data()
+    model = CNN().to(device)
 
-    if os.path.exists('cnn_model.pth'):
-        load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
-        if load_model == 'yes':
-            checkpoint = torch.load('cnn_model.pth')
-            config_cnn_architecture.update(
-                checkpoint['architecture'])  # Update the configuration with loaded architecture
-            model = CNN().to(device)
-            model.load_state_dict(checkpoint['model_state_dict'])
-            learning_rate = checkpoint['learning_rate']
-            batch_size = checkpoint['batch_size']
-            num_epochs = checkpoint['num_epochs']
-            print(f"Loaded model with learning_rate={learning_rate}, batch_size={batch_size}, num_epochs={num_epochs}")
-        else:
-            best_params, best_accuracy = hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform)
-            print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
-    else:
+    def load_existing_model():
+        checkpoint = torch.load('cnn_model.pth')
+        config_cnn_architecture.update(checkpoint['architecture'])  # Update the configuration with loaded architecture
+        model.load_state_dict(checkpoint['model_state_dict'])
+        learning_rate = checkpoint['learning_rate']
+        batch_size = checkpoint['batch_size']
+        num_epochs = checkpoint['num_epochs']
+        print(f"Loaded model with learning_rate={learning_rate}, batch_size={batch_size}, num_epochs={num_epochs}")
+
+    def train_new_model():
         best_params, best_accuracy = hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform)
         print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
+        model.load_state_dict(
+            torch.load('cnn_model.pth')['model_state_dict'])  # Load the best model after hyperparameter tuning
+
+    def prompt_for_loading_model():
+        load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
+        if load_model == 'yes':
+            load_existing_model()
+        else:
+            train_new_model()
+
+    def prompt_user_between_single_and_testData():
+        choice = input(
+            "Do you want to evaluate the entire test dataset or classify a single image? (test/single): ").strip().lower()
+        if choice == 'test':
+            evaluate_model(model, test_loader, classes)  # Evaluate the test dataset
+        elif choice == 'single':
+            single_image_prediction_prompt(classes, transform)  # Predict a single image
+        else:
+            print("Invalid choice. Please enter 'test' or 'single'.")
+
+    if os.path.exists('cnn_model.pth'):
+        prompt_for_loading_model()
+    else:
+        train_new_model()
 
     # Prompt user to choose between evaluating test dataset or single image
-    choice = input("Do you want to evaluate the entire test dataset or classify a single image? (test/single): ").strip().lower()
-    if choice == 'test':
-        evaluate_model(model, test_loader, classes)  # Evaluate the test dataset
-    elif choice == 'single':
-        single_image_prediction_prompt(classes, transform)  # Predict a single image
-    else:
-        print("Invalid choice. Please enter 'test' or 'single'.")
-
+    prompt_user_between_single_and_testData()
