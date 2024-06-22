@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.semi_supervised import SelfTrainingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import RandomizedSearchCV
-import Utils
+from . import Utils
 import time
 from Config import config
 

@@ -1,3 +1,5 @@
+import os
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from Preprocessing import Preprocessing
@@ -6,7 +8,8 @@ from DecisionTree.SemiSupervisedImageClassifier import SemiSupervisedImageClassi
 from DecisionTree.Spinner import Spinner
 
 # Configuration
-data_dir = '../dataset'
+current_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(current_dir, '..', 'dataset')
 img_height, img_width = 128, 128
 
 
@@ -70,7 +73,7 @@ def execute_preprocessing():
     return preprocessing, label_encoder, X_train, X_test, y_train, y_test
 
 
-if __name__ == "__main__":
+def run_decision_tree():
     spinner = Spinner()
     preprocessing, label_encoder, X_train, X_test, y_train, y_test = execute_preprocessing()
 

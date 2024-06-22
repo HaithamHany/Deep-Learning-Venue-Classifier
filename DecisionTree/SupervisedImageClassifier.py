@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import RandomizedSearchCV
 import tensorflow as tf
-import Utils
+from . import Utils
 from Config import config
 
 
