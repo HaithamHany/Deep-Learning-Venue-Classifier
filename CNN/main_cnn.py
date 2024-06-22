@@ -75,7 +75,7 @@ def load_data():
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2, pin_memory=True)
 
     # Get class names from the directory structure
-    classes = sorted([d.name for d in os.scandir(data_dir) if d.is_dir()])
+    classes = sorted([d.name for d in os.scandir(data_dir) if d.is_dir() and d.name != "Test"])
 
     return train_loader, val_loader, test_loader, classes, transform
 
