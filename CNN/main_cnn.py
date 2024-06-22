@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, random_split
 import torch.nn as nn
 import random
 import numpy as np
-from CNN import CNN
+from CNN.CNN import CNN
 from PIL import Image
 from Config import config_cnn_architecture, config_cnn  # Import your CNN config
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
@@ -240,7 +240,7 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
     return best_params, best_accuracy
 
 
-if __name__ == "__main__":
+def run_cnn():
     train_loader, val_loader, test_loader, classes, transform = load_data()
 
     if os.path.exists('cnn_model.pth'):
