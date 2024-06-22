@@ -67,15 +67,17 @@ def execute_preprocessing():
 
     spinner.set_msg("Splitting data into training and testing sets")
     spinner.start()
-    X_train, X_test, y_train, y_test = train_test_split(images, labels_encoded, test_size=0.2, random_state=42)
+    X_train, X_temp, y_train, y_temp = train_test_split(images, labels_encoded, test_size=0.3, random_state=42)
+    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+
     spinner.stop()
 
-    return preprocessing, label_encoder, X_train, X_test, y_train, y_test
+    return preprocessing, label_encoder, X_train, X_val, X_test, y_train, y_val, y_test
 
 
 def run_decision_tree():
     spinner = Spinner()
-    preprocessing, label_encoder, X_train, X_test, y_train, y_test = execute_preprocessing()
+    preprocessing, label_encoder, X_train, X_val, X_test, y_train, y_val, y_test = execute_preprocessing()
 
     # User choice for classifier mode
     print()
@@ -97,7 +99,8 @@ def run_decision_tree():
         print("Selected action: Train a new model")
         spinner.set_msg("Training Model")
         spinner.start()
-        classifier.train_classifier(X_train, y_train)
+        classifier.train_classifier(X_train, y_train, X_val, y_val)
+
         spinner.stop()
     else:
         print("Selected action: Load a previously trained model")
