@@ -215,17 +215,25 @@ def predict_image(model, classes, transform, image_path):
 
 def single_image_prediction_prompt(classes, transform):
     test_images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset', 'test'))
+    test_images = os.listdir(test_images_dir)
     print("Available images:")
-    for img_name in os.listdir(test_images_dir):
-        print(img_name)
-    image_name = input("Enter the name of the image (e.g., image.jpg): ").strip()
-    image_path = os.path.join(test_images_dir, image_name)
-    model = CNN().to(device)
-    checkpoint = torch.load('cnn_model.pth')
-    model.load_state_dict(checkpoint['model_state_dict'])
-    model.eval()
-    prediction = predict_image(model, classes, transform, image_path)
-    print(f'Predicted class for the image: {prediction}')
+    for idx, img_name in enumerate(test_images):
+        print(f"{idx}: {img_name}")
+    try:
+        image_index = int(input("Enter the index of the image: ").strip())
+        if image_index < 0 or image_index >= len(test_images):
+            raise ValueError("Index out of range")
+        image_name = test_images[image_index]
+        image_path = os.path.join(test_images_dir, image_name)
+        model = CNN().to(device)
+        checkpoint = torch.load('cnn_model.pth')
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.eval()
+        prediction = predict_image(model, classes, transform, image_path)
+        print(f'Predicted class for the image: {prediction}')
+    except ValueError as e:
+        print(f"Invalid input: {e}")
+
 
 
 def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform):
