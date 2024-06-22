@@ -255,7 +255,6 @@ def run_cnn():
             batch_size = checkpoint['batch_size']
             num_epochs = checkpoint['num_epochs']
             print(f"Loaded model with learning_rate={learning_rate}, batch_size={batch_size}, num_epochs={num_epochs}")
-            evaluate_model(model, test_loader, classes)
         else:
             best_params, best_accuracy = hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform)
             print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
@@ -263,6 +262,12 @@ def run_cnn():
         best_params, best_accuracy = hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform)
         print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
 
-    # Option to predict an individual image
-    single_image_prediction_prompt(classes, transform)
+    # Prompt user to choose between evaluating test dataset or single image
+    choice = input("Do you want to evaluate the entire test dataset or classify a single image? (test/single): ").strip().lower()
+    if choice == 'test':
+        evaluate_model(model, test_loader, classes)  # Evaluate the test dataset
+    elif choice == 'single':
+        single_image_prediction_prompt(classes, transform)  # Predict a single image
+    else:
+        print("Invalid choice. Please enter 'test' or 'single'.")
 
