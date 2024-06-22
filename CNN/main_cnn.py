@@ -22,7 +22,6 @@ if torch.cuda.is_available():
     for i in range(num_gpus):
         print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
 else:
-    print("CUDA is not available!")
     device = torch.device("cpu")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
