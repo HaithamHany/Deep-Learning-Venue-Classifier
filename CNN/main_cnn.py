@@ -22,7 +22,6 @@ if torch.cuda.is_available():
     for i in range(num_gpus):
         print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
 else:
-    print("CUDA is not available!")
     device = torch.device("cpu")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -221,7 +220,7 @@ def single_image_prediction_prompt(classes, transform):
     image_name = input("Enter the name of the image (e.g., image.jpg): ").strip()
     image_path = os.path.join(test_images_dir, image_name)
     model = CNN().to(device)
-    checkpoint = torch.load('cnn_model.pth')
+    checkpoint = torch.load('cnn_model.pth', map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     prediction = predict_image(model, classes, transform, image_path)
