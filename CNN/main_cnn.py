@@ -284,6 +284,7 @@ def run_cnn():
         batch_size = checkpoint['batch_size']
         num_epochs = checkpoint['num_epochs']
         print(f"Loaded model with learning_rate={learning_rate}, batch_size={batch_size}, num_epochs={num_epochs}")
+        evaluate_model(model, test_loader, classes)
 
     def train_new_model():
         best_params, best_accuracy = hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform)
