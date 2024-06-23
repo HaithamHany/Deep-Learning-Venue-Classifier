@@ -1,4 +1,4 @@
-# Venue Classification using Decision Trees and CNN
+# Venue Classification Using Decision Trees and CNN
 
 This project explores the effectiveness of supervised and semi-supervised learning approaches for venue classification using decision tree models and a convolutional neural network (CNN). The models are evaluated on the "Indoor Scene Recognition" dataset from MIT for venue classification. Hyperparameter tuning is performed using Random Search, and the models are assessed using cross-validation.
 
@@ -22,9 +22,11 @@ This project implements and evaluates supervised and semi-supervised learning ap
 - Model persistence for reproducibility
 
 ## Dataset
-The dataset used is the MIT Indoor Scenes dataset, which contains images of 67 different indoor categories. For this project, a subset of 5 categories (Bedroom, Grocery, Office, Restaurant, and Station) is used.
+The dataset used is the MIT Indoor Scenes dataset, which contains images of 67 different indoor categories (link: [Original Dataset](https://web.mit.edu/torralba/www/indoor.html)). For this project, a subset of 5 categories (Bedroom, Grocery, Office, Restaurant, and Station) is used.
 
-Download the MIT Indoor Scenes dataset and place it in the dataset directory. [Link to Dataset](https://web.mit.edu/torralba/www/indoor.html)
+The subset dataset can be found in the GitHub Repository: [Dataset](dataset/)
+
+A smaller test dataset with 5 images, one from each class can also be found in the GitHub Repository: [Test Dataset](dataset/Test)
 
 ## Project Structure
 The project includes the following files:
@@ -62,7 +64,7 @@ The CNN model architecture is defined in CNN.py using PyTorch. It consists of co
 ## Training and Validation
 Training the Decision Tree Model/CNN Model:
 
-run: python main.py
+run: python Main.py
 You will be prompted to select the model (CNN or Decision Tree) and the mode (supervised or semi-supervised). Follow the on-screen instructions to proceed with training or loading a pre-trained model.
 
 The script will handle loading the dataset, splitting it into training, validation, and testing sets, and training the Decision Tree/CNN model.
@@ -70,10 +72,10 @@ The script will handle loading the dataset, splitting it into training, validati
 ## Running the Pre-trained Model
 If you have a pre-trained model and want to evaluate it on the test dataset, ensure the model file is in the correct directory and run:
 
-python main.py
+python Main.py
 Select the option to load a previously trained model when prompted.
 
-The script will detect the pre-trained model and prompt you to load it for evaluation.
+The script will detect the pre-trained model and prompt you to load it for evaluation on a test dataset.
 
 ## Source Code
 The source code is provided in the repository with the following key files:
@@ -88,5 +90,7 @@ The source code is provided in the repository with the following key files:
 - SemiSupervisedImageClassifier.py: Semi-supervised learning implementation.
 - Spinner.py: Utility class for progress display.
 - Utils.py: Additional utility functions.
+
+
 
 By integrating the CNN model alongside decision trees, this project provides a comprehensive approach to venue classification using both traditional machine learning and deep learning techniques.
