@@ -238,7 +238,7 @@ def single_image_prediction_prompt(classes, transform):
         image_name = test_images[image_index]
         image_path = os.path.join(test_images_dir, image_name)
         model = CNN().to(device)
-        checkpoint = torch.load('cnn_model.pth')
+        checkpoint = torch.load('cnn_model.pth', map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.eval()
         prediction = predict_image(model, classes, transform, image_path)
