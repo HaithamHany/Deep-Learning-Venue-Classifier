@@ -46,6 +46,7 @@ class SemiSupervisedImageClassifier:
 
         # Flatten images
         X_combined_flat = self.preprocessing.flatten_images(X_combined_train)
+        X_val_flat = self.preprocessing.flatten_images(X_val)
 
         # Define parameter distributions for RandomizedSearchCV
         param_distributions = {
@@ -61,7 +62,6 @@ class SemiSupervisedImageClassifier:
         self_training_clf = SelfTrainingClassifier(base_clf)
 
         # Perform randomized search with parallelization
-        start_time = time.time()
         randomized_search = RandomizedSearchCV(
             estimator=self_training_clf,
             param_distributions=param_distributions,
@@ -73,8 +73,7 @@ class SemiSupervisedImageClassifier:
             random_state=config.get("random_state")
         )
 
-        randomized_search.fit(X_combined_flat, y_train_semi_with_unlabeled, validation_data=(X_val, y_val))
-
+        randomized_search.fit(X_combined_flat, y_train_semi_with_unlabeled)
 
         best_params = randomized_search.best_params_
         best_score = randomized_search.best_score_
@@ -82,18 +81,23 @@ class SemiSupervisedImageClassifier:
         print(f"Best Hyperparameters: {best_params}")
         print(f"Best Cross-Validation Accuracy: {best_score}")
 
+        # Validate on validation set
+        val_score = randomized_search.score(X_val_flat, y_val)
+        print(f"Validation Accuracy: {val_score}")
+
         # Pseudo-label the unlabeled data
         X_unlabeled_flat = self.preprocessing.flatten_images(X_unlabeled)
-
         X_pseudo, y_pseudo = self.pseudo_label(randomized_search.best_estimator_, X_unlabeled_flat, 0.97)
 
         # Combine labeled and pseudo-labeled data
-        X_combined_final = np.concatenate((X_combined_flat, X_pseudo))
-        y_combined_final = np.concatenate((y_train_semi_with_unlabeled, y_pseudo))
+        X_combined_final = np.concatenate((X_train_semi, X_pseudo))
+        y_combined_final = np.concatenate((y_train_semi, y_pseudo))
+
+        # Flatten the final combined data
+        X_combined_final_flat = self.preprocessing.flatten_images(X_combined_final)
 
         # Train final model on combined data
-        start_time = time.time()
-        self_training_clf.fit(X_combined_final, y_combined_final)
+        self_training_clf.fit(X_combined_final_flat, y_combined_final)
 
         # Save the trained model
         self.trained_model = self_training_clf
