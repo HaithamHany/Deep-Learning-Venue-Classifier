@@ -47,8 +47,9 @@ The project includes the following files:
 ### Clone the Repository:
 
 git clone https://github.com/HaithamHany/DeepLearningVenueClassifier.git
+
 Download dataset:
-Download the MIT Indoor Scenes dataset and place it in the dataset directory. Link to Dataset
+Download the MIT Indoor Scenes dataset and place it in the dataset directory (Only if not already downloaded through the clone of the repository). [Dataset](dataset/)
 
 Install Dependencies:
 Ensure you have Python 3.x installed. Install the required libraries using:
