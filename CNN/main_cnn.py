@@ -277,7 +277,7 @@ def run_cnn():
     model = CNN().to(device)
 
     def load_existing_model():
-        checkpoint = torch.load('cnn_model.pth')
+        checkpoint = torch.load('cnn_model.pth', map_location=device)
         config_cnn_architecture.update(checkpoint['architecture'])  # Update the configuration with loaded architecture
         model.load_state_dict(checkpoint['model_state_dict'])
         learning_rate = checkpoint['learning_rate']
