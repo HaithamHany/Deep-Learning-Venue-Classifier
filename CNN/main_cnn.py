@@ -226,7 +226,7 @@ def predict_image(model, classes, transform, image_path):
 
 
 def single_image_prediction_prompt(classes, transform):
-    test_images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'dataset', 'test'))
+    test_images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'test'))
     test_images = os.listdir(test_images_dir)
     print("Available images:")
     for idx, img_name in enumerate(test_images):
