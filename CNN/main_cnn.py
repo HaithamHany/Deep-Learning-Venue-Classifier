@@ -300,13 +300,13 @@ def run_cnn():
 
     def prompt_user_between_single_and_testData():
         choice = input(
-            "Do you want to evaluate the entire test dataset or classify a single image? (test/single): ").strip().lower()
+            "Do you want to evaluate the entire test dataset, classify a single image, or exit? (test/single/any other key to exit): ").strip().lower()
         if choice == 'test':
             evaluate_model(model, test_loader, classes)  # Evaluate the test dataset
         elif choice == 'single':
             single_image_prediction_prompt(classes, transform)  # Predict a single image
         else:
-            print("Invalid choice. Please enter 'test' or 'single'.")
+            print("Exiting the program.")
 
     if os.path.exists('cnn_model.pth'):
         prompt_for_loading_model()
