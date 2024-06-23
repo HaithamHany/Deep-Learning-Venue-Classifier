@@ -63,9 +63,13 @@ Hyperparameters are defined in the Config.py file. Modify the values as needed t
 The CNN model architecture is defined in CNN.py using PyTorch. It consists of convolutional layers followed by fully connected layers for classification. Hyperparameters such as learning rate, batch size, and number of epochs can be adjusted for optimal performance.
 
 ## Training and Validation
-Training the Decision Tree Model/CNN Model:
 
-run: python Main.py
+For training the Decision Tree Model/CNN Model, run the following:
+
+```bash
+python Main.py
+```
+
 You will be prompted to select the model (CNN or Decision Tree) and the mode (supervised or semi-supervised). Follow the on-screen instructions to proceed with training or loading a pre-trained model.
 
 The script will handle loading the dataset, splitting it into training, validation, and testing sets, and training the Decision Tree/CNN model.
@@ -73,7 +77,10 @@ The script will handle loading the dataset, splitting it into training, validati
 ## Running the Pre-trained Model
 If you have a pre-trained model and want to evaluate it on the test dataset, ensure the model file is in the correct directory and run:
 
+```bash
 python Main.py
+```
+
 Select the option to load a previously trained model when prompted.
 
 The script will detect the pre-trained model and prompt you to load it for evaluation on a test dataset.
