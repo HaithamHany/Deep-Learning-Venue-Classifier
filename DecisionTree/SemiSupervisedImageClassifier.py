@@ -89,6 +89,10 @@ class SemiSupervisedImageClassifier:
         X_unlabeled_flat = self.preprocessing.flatten_images(X_unlabeled)
         X_pseudo, y_pseudo = self.pseudo_label(randomized_search.best_estimator_, X_unlabeled_flat, 0.97)
 
+        # Ensure X_pseudo has the same number of dimensions as X_train_semi
+        if X_pseudo.ndim == 2:  # Flattened images need to be reshaped to match
+            X_pseudo = X_pseudo.reshape((-1,) + X_train_semi.shape[1:])
+
         # Combine labeled and pseudo-labeled data
         X_combined_final = np.concatenate((X_train_semi, X_pseudo))
         y_combined_final = np.concatenate((y_train_semi, y_pseudo))
