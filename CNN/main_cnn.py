@@ -6,13 +6,13 @@ from torch.utils.data import DataLoader, random_split
 import torch.nn as nn
 import random
 import numpy as np
-from CNN.CNN import CNN
 from PIL import Image
 from Config import config_cnn_architecture, config_cnn  # Import your CNN config
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 from torchvision import models
+from torchvision.models import VGG16_Weights
 
 
 # Check if CUDA is available
@@ -86,7 +86,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
                            num_epochs):
 
     #loading vgg16 model
-    model = models.vgg16(pretrained=True)
+    model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
 
     num_features = model.classifier[6].in_features
     model.classifier[6] = nn.Linear(num_features, len(classes))
@@ -278,6 +278,9 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
                 print(f"Training with learning_rate={lr}, batch_size={bs}, num_epochs={epochs}")
                 precision, recall, f1, _, val_acc_list = train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes,
                                                                   transform, lr, bs, epochs)
+
+                print(
+                    f"Precision: {precision}, Recall: {recall}, F1 Score: {f1}, Validation Accuracy: {val_acc_list[-1]}")
                 if precision > best_accuracy:  # Assuming you want to use precision or choose another metric
                     best_accuracy = precision
                     best_params = {'learning_rate': lr, 'batch_size': bs, 'num_epochs': epochs}
@@ -291,7 +294,7 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
 
 
 
-def run_cnn():
+if __name__ == "__main__":
     # Initializes data loaders and the VGG-16 model.
     train_loader, val_loader, test_loader, classes, transform = load_data()
     model = models.vgg16(pretrained=True)

@@ -13,7 +13,7 @@ config = {
 config_cnn = {
     "learning_rate": [0.001, 0.0005, 0.0001],
     "batch_size": [16, 32, 64, 128],
-    "num_epochs": [10, 50],
+    "num_epochs": [10, 50]
 }
 
 config_cnn_architecture = {
