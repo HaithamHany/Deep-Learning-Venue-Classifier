@@ -12,6 +12,7 @@ from Config import config_cnn_architecture, config_cnn  # Import your CNN config
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
+from torchvision import models
 
 
 # Check if CUDA is available
@@ -84,8 +85,16 @@ def load_data():
 def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, transform, learning_rate, batch_size,
                            num_epochs):
 
-    #Initializing the CNN model, loss function, and optimizer
-    model = CNN().to(device)
+    #loading vgg16 model
+    model = models.vgg16(pretrained=True)
+
+    num_features = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(num_features, len(classes))
+
+    #  freeze the base layers of a pretrained model to retain the features it has already learned
+    for param in model.features.parameters():
+        param.requires_grad = False
+
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -134,8 +143,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
         'learning_rate': learning_rate,
         'batch_size': batch_size,
         'num_epochs': num_epochs,
-        'architecture': config_cnn_architecture
-    }, 'cnn_model.pth')
+    }, 'vgg16_model.pth')
 
     # Evaluate on test set
     accuracy, precision, recall, f1, conf_matrix, per_class_metrics = evaluate_model(model, test_loader, classes)
@@ -241,14 +249,21 @@ def single_image_prediction_prompt(classes, transform):
             raise ValueError("Index out of range")
         image_name = test_images[image_index]
         image_path = os.path.join(test_images_dir, image_name)
-        model = CNN().to(device)
-        checkpoint = torch.load('cnn_model.pth', map_location=device)
+
+        # Using Vgg16
+        model = models.vgg16(pretrained=False)  # Load VGG-16 without pretrained weights
+        num_features = model.classifier[6].in_features
+        model.classifier[6] = nn.Linear(num_features, len(classes))
+        checkpoint = torch.load('vgg16_model.pth', map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
+        model = model.to(device)
+
         model.eval()
         prediction = predict_image(model, classes, transform, image_path)
         print(f'Predicted class for the image: {prediction}')
     except ValueError as e:
         print(f"Invalid input: {e}")
+
 
 
 
@@ -277,13 +292,17 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
 
 
 def run_cnn():
-    #Initializes data loaders and the CNN model.
+    # Initializes data loaders and the VGG-16 model.
     train_loader, val_loader, test_loader, classes, transform = load_data()
-    model = CNN().to(device)
+    model = models.vgg16(pretrained=True)
+    num_features = model.classifier[6].in_features
+    model.classifier[6] = nn.Linear(num_features, len(classes))
+    for param in model.features.parameters():
+        param.requires_grad = False
+    model = model.to(device)
 
     def load_existing_model():
-        checkpoint = torch.load('cnn_model.pth', map_location=device)
-        config_cnn_architecture.update(checkpoint['architecture'])  # Update the configuration with loaded architecture
+        checkpoint = torch.load('vgg16_model.pth', map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
         learning_rate = checkpoint['learning_rate']
         batch_size = checkpoint['batch_size']
@@ -295,7 +314,7 @@ def run_cnn():
         best_params, best_accuracy = hyperparameters_tuning(train_loader, val_loader, test_loader, classes, transform)
         print(f"Best Accuracy: {best_accuracy}% with params: {best_params}")
         model.load_state_dict(
-            torch.load('cnn_model.pth')['model_state_dict'])  # Load the best model after hyperparameter tuning
+            torch.load('vgg16_model.pth')['model_state_dict'])  # Load the best model after hyperparameter tuning
 
     def prompt_for_loading_model():
         load_model = input("Model found. Do you want to load the existing model? (yes/no): ").strip().lower()
@@ -314,7 +333,7 @@ def run_cnn():
         else:
             print("Exiting the program.")
 
-    if os.path.exists('cnn_model.pth'):
+    if os.path.exists('vgg16_model.pth'):
         prompt_for_loading_model()
     else:
         train_new_model()
