@@ -37,7 +37,7 @@ class SupervisedImageClassifier:
         X_train_augmented = np.concatenate(X_train_augmented)
         y_train_augmented = np.concatenate(y_train_augmented)
 
-        # Flatten images
+        # Converts the images from 2D arrays to 1D arrays suitable for the Decision Tree classifier.
         X_train_flat = self.preprocessing.flatten_images(X_train_augmented)
         X_val_flat = self.preprocessing.flatten_images(X_val)
 

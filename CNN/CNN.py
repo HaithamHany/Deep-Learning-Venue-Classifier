@@ -53,7 +53,7 @@ class CNN(nn.Module):
 
 def calculate_conv_output_size(input_size, config):
     size = input_size
-    for i in range(config["num_layers"]):
+    for i in range(config["num_layers"]): #loop over the convolutional layers
         size = (size - config["filter_sizes"][i] + 2 * config["paddings"][i]) // config["strides"][i] + 1
         if (i + 1) % 2 == 0:  # Apply max pooling after every two layers
             size = size // 2

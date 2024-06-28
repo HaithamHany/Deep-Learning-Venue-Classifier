@@ -13,6 +13,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, confusion_m
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 # Check if CUDA is available
 if torch.cuda.is_available():
     print("CUDA is available!")
@@ -82,6 +83,8 @@ def load_data():
 
 def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, transform, learning_rate, batch_size,
                            num_epochs):
+
+    #Initializing the CNN model, loss function, and optimizer
     model = CNN().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -97,27 +100,28 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
     acc_list = []
     val_acc_list = []
 
+ #Trains the model over a specified number of epochs
     for epoch in range(num_epochs):
-        model.train()
-        for images, labels in train_loader:
-            images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+        model.train() # Puts the model in training
+        for images, labels in train_loader: # Iterates over batches of data
+            images, labels = images.to(device), labels.to(device) # Moves data to the appropriate device (CPU/GPU)
+            outputs = model(images)  # Performs a forward pass
+            loss = criterion(outputs, labels) # Computes the loss
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+            optimizer.zero_grad() # Clears the gradients from the previous step
+            loss.backward()  # Backpropagation
+            optimizer.step()  # Updates the model parameters
 
-        # Validation phase
-        model.eval()
-        with torch.no_grad():
+        # Validation phase by evaluating its performance on the validation set
+        model.eval() #eval mode
+        with torch.no_grad(): #disabling gradient calculation because not needed
             correct = 0
             total = 0
             for images, labels in val_loader:
                 images, labels = images.to(device), labels.to(device)
-                outputs = model(images)
-                _, predicted = torch.max(outputs.data, 1)
-                correct += (predicted == labels).sum().item()
+                outputs = model(images) #Forward Pass
+                _, predicted = torch.max(outputs.data, 1) #predicted labels
+                correct += (predicted == labels).sum().item() #updating correct counters
                 total += labels.size(0)
 
         val_accuracy = 100 * correct / total
@@ -160,8 +164,8 @@ def evaluate_model(model, test_loader, classes):
     with torch.no_grad():
         for images, labels in test_loader:
             images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
+            outputs = model(images) #forward pass
+            _, predicted = torch.max(outputs.data, 1) # finds the class with the highest predicted probability
             predictions.extend(predicted.cpu().numpy())  # Save predictions
             true_labels.extend(labels.cpu().numpy())  # Save true labels
 
@@ -219,10 +223,10 @@ def predict_image(model, classes, transform, image_path):
     image = Image.open(image_path)
     image = transform(image).unsqueeze(0)  # Apply same transformation as training and add batch dimension
     model.eval()
-    with torch.no_grad():
+    with torch.no_grad(): #Runs the image through the model to get predictions and disables gradient
         output = model(image)
-        _, predicted = torch.max(output.data, 1)
-        return classes[predicted.item()]
+        _, predicted = torch.max(output.data, 1) #find class with the highest predicted score
+        return classes[predicted.item()] #class with the highest predicted score
 
 
 def single_image_prediction_prompt(classes, transform):
@@ -273,6 +277,7 @@ def hyperparameters_tuning(train_loader, val_loader, test_loader, classes, trans
 
 
 def run_cnn():
+    #Initializes data loaders and the CNN model.
     train_loader, val_loader, test_loader, classes, transform = load_data()
     model = CNN().to(device)
 

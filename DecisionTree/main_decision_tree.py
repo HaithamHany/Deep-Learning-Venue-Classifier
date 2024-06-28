@@ -67,7 +67,11 @@ def execute_preprocessing():
 
     spinner.set_msg("Splitting data into training and testing sets")
     spinner.start()
+
+    #Split 70% training and 30% temporary
     X_train, X_temp, y_train, y_temp = train_test_split(images, labels_encoded, test_size=0.3, random_state=42)
+
+    # 50% validation and 50% testing = 15% each of the original data
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
     spinner.stop()
