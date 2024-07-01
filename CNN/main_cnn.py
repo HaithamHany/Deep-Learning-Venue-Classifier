@@ -13,25 +13,36 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from torchvision import models
 from torchvision.models import VGG16_Weights
+import multiprocessing as mp
+mp.set_start_method('spawn', force=True)
 
+def initialize_device():
+    if torch.cuda.is_available():
+        print("CUDA is available!")
+        device = torch.device("cuda")
+        print("Using GPU:", torch.cuda.get_device_name(0))
+        num_gpus = torch.cuda.device_count()
+        print(f"Number of GPUs available: {num_gpus}")
+        for i in range(num_gpus):
+            print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
+    else:
+        print("Using CPU")
+        device = torch.device("cpu")
+    return device
 
-# Check if CUDA is available
-if torch.cuda.is_available():
-    print("CUDA is available!")
-    device = torch.device("cuda")  # Changed: Directly assign device
-    num_gpus = torch.cuda.device_count()
-    print(f"Number of GPUs available: {num_gpus}")
-    for i in range(num_gpus):
-        print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
-else:
-    device = torch.device("cpu")
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = initialize_device()
 
 num_epochs = 4
 num_classes = 5
 learning_rate = 0.001
 
+def load_checkpoint(checkpoint_path, model, optimizer):
+    checkpoint = torch.load(checkpoint_path)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
+    loss = checkpoint['loss']
+    return model, optimizer, epoch, loss
 
 # Setting a fixed seed for all random number generators to ensure reproducibility
 # and consistent behavior across different runs of the code.
@@ -72,9 +83,9 @@ def load_data():
     train_dataset, val_dataset, test_dataset = random_split(dataset, [train_count, val_count, test_count])
 
     # Create data loaders
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=2, pin_memory=True)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=8, pin_memory=True, prefetch_factor=2)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True, num_workers=8, pin_memory=True, prefetch_factor=2)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=8, pin_memory=True, prefetch_factor=2)
 
     # Get class names from the directory structure
     classes = sorted([d.name for d in os.scandir(data_dir) if d.is_dir() and d.name != "Test"])
@@ -86,7 +97,7 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
                            num_epochs):
 
     #loading vgg16 model
-    model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
+    model = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1).to(device)
 
     num_features = model.classifier[6].in_features
     model.classifier[6] = nn.Linear(num_features, len(classes))
@@ -94,6 +105,8 @@ def train_and_evaluate_cnn(train_loader, test_loader, val_loader, classes, trans
     #  freeze the base layers of a pretrained model to retain the features it has already learned
     for param in model.features.parameters():
         param.requires_grad = False
+
+    model = model.to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
